@@ -1,68 +1,53 @@
 import { betterAuth } from "better-auth";
-import type { BetterAuthOptions } from "better-auth";
-import { getOAuthState } from "better-auth/api";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { toNextJsHandler } from "better-auth/next-js";
-import { getMongoClient } from "./mongodb";
+import { MongoClient } from "mongodb";
 
-let handlers: ReturnType<typeof toNextJsHandler> | undefined;
+const uri = process.env.MONGODB_URI as string;
+const dbName = process.env.MONGODB_DATABASE ?? "fixora";
 
-function createAuthOptions() {
-  const client = getMongoClient();
-  const databaseName = process.env.MONGODB_DATABASE || "fixora";
-
-  const googleClientId = process.env.GOOGLE_CLIENT_ID;
-  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-  return {
-    database: mongodbAdapter(client.db(databaseName), { client }),
-    emailAndPassword: { enabled: true },
-    baseURL: process.env.BETTER_AUTH_URL,
-    user: {
-      additionalFields: {
-        role: {
-          type: "string",
-          required: false,
-          defaultValue: "customer",
-          input: true,
-          transform: {
-            input: (value) =>
-              value === "technician" ? "technician" : "customer",
-          },
-        },
-      },
-    },
-    socialProviders:
-      googleClientId && googleClientSecret
-        ? {
-            google: {
-              clientId: googleClientId,
-              clientSecret: googleClientSecret,
-            },
-          }
-        : {},
-    databaseHooks: {
-      user: {
-        create: {
-          before: async (user) => {
-            const oauthState = await getOAuthState<{ role?: unknown }>();
-            const role =
-              user.role === "technician" || oauthState?.role === "technician"
-                ? "technician"
-                : "customer";
-            return { data: { ...user, role } };
-          },
-        },
-      },
-    },
-  } satisfies BetterAuthOptions;
+if (!uri) {
+  throw new Error("MONGODB_URI environment variable is not set");
 }
 
-export type AuthOptions = ReturnType<typeof createAuthOptions>;
-
-export function getAuthHandlers() {
-  if (handlers) return handlers;
-
-  handlers = toNextJsHandler(betterAuth(createAuthOptions()));
-  return handlers;
+// Global singleton — reuses the connection across hot reloads in dev
+declare global {
+  var _fixoraMongoClient: MongoClient | undefined;
 }
+
+let mongoClient: MongoClient;
+if (global._fixoraMongoClient) {
+  mongoClient = global._fixoraMongoClient;
+} else {
+  mongoClient = new MongoClient(uri);
+  if (process.env.NODE_ENV === "development") {
+    global._fixoraMongoClient = mongoClient;
+  }
+}
+
+const db = mongoClient.db(dbName);
+
+export const auth = betterAuth({
+  database: mongodbAdapter(db, { client: mongoClient }),
+
+  emailAndPassword: {
+    enabled: true,
+  },
+
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "customer",
+        input: true, // allow client to send this field on sign-up
+      },
+    },
+  },
+
+  socialProviders: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID as string,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
+    },
+  },
+});
