@@ -161,8 +161,8 @@ export const Navbar: React.FC<NavbarProps> = ({onOpenBooking, onOpenTracker,}) =
   const user = session?.user;
   const role = user?.role === "technician" || user?.role === "admin" ? user.role : "customer";
   const roleLabel = role[0].toUpperCase() + role.slice(1);
-  const dashboardHref = role === "customer" ? "/dashboard/customer/bookings" : `/dashboard/${role}`;
-  const profileHref = `/dashboard/${role}/profile`;
+  const dashboardHref = `/dashboard/${role}`;
+  const profileHref = "/dashboard/profile";
 
   useEffect(() => {
     const handleScroll = () => {

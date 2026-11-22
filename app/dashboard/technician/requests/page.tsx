@@ -1,0 +1,195 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import {
+  DashboardEmpty,
+  DashboardError,
+  DashboardPageHeading,
+  DashboardTable,
+  StatusBadge,
+  secondaryButtonClass,
+  tableCellClass,
+  tableHeaderClass,
+} from "../../../../components/dashboard/DashboardComponents";
+import { dashboardRequest } from "../../../../components/dashboard/api";
+
+interface TechnicianBooking {
+  id: string;
+  customerName: string;
+  phone: string;
+  address: string;
+  preferredDate: string;
+  problemDescription: string;
+  serviceTitle: string;
+  status: string;
+}
+
+const filters = ["all", "requested", "accepted", "in-progress", "completed"];
+const actionMap: Record<string, { label: string; status: string }[]> = {
+  requested: [
+    { label: "Accept", status: "accepted" },
+    { label: "Reject", status: "rejected" },
+  ],
+  accepted: [{ label: "Start job", status: "in-progress" }],
+  "in-progress": [{ label: "Mark completed", status: "completed" }],
+};
+
+export default function TechnicianRequestsPage() {
+  const [bookings, setBookings] = useState<TechnicianBooking[]>([]);
+  const [filter, setFilter] = useState("all");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [workingId, setWorkingId] = useState("");
+
+  const loadBookings = useCallback(async () => {
+    const result = await dashboardRequest<{ bookings: TechnicianBooking[] }>("/api/dashboard/requests");
+    setBookings(result.bookings);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const result = await dashboardRequest<{ bookings: TechnicianBooking[] }>("/api/dashboard/requests");
+        if (active) setBookings(result.bookings);
+      } catch (loadError) {
+        if (active) setError(loadError instanceof Error ? loadError.message : "Unable to load requests.");
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updateStatus = async (booking: TechnicianBooking, status: string) => {
+    setError("");
+    setWorkingId(booking.id);
+    try {
+      await dashboardRequest(`/api/dashboard/requests/${encodeURIComponent(booking.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      await loadBookings();
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : "Unable to update this request.");
+    } finally {
+      setWorkingId("");
+    }
+  };
+
+  const visibleBookings = filter === "all"
+    ? bookings
+    : bookings.filter((booking) => booking.status === filter);
+
+  return (
+    <div>
+      <DashboardPageHeading
+        eyebrow="Technician"
+        title="Manage Requests"
+        description="Review customer repair requests and move each job through its valid statuses."
+      />
+      <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Filter requests by status">
+        {filters.map((status) => (
+          <button
+            type="button"
+            key={status}
+            onClick={() => setFilter(status)}
+            aria-pressed={filter === status}
+            className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
+              filter === status ? "bg-[#2563EB] text-white" : "border border-[#E5E7EB] bg-white text-[#454B54] hover:bg-slate-50"
+            }`}
+          >
+            {status === "all" ? "All" : status === "in-progress" ? "In Progress" : status[0].toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+      {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
+      {isLoading ? (
+        <p className="py-10 text-center text-sm text-[#737B87]">Loading requests...</p>
+      ) : visibleBookings.length === 0 ? (
+        <DashboardEmpty>No requests match this status.</DashboardEmpty>
+      ) : (
+        <>
+          <div className="space-y-4 md:hidden">
+            {visibleBookings.map((booking) => (
+              <article key={booking.id} className="rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold text-[#172B4D]">{booking.customerName}</h3>
+                  <StatusBadge value={booking.status} />
+                </div>
+                <p className="mt-2 text-sm text-[#454B54]">{booking.serviceTitle}</p>
+                <dl className="mt-3 space-y-2 text-xs text-[#737B87]">
+                  <div><dt className="inline font-semibold">Phone: </dt><dd className="inline">{booking.phone}</dd></div>
+                  <div><dt className="inline font-semibold">Address: </dt><dd className="inline">{booking.address}</dd></div>
+                  <div><dt className="inline font-semibold">Preferred date: </dt><dd className="inline">{new Date(booking.preferredDate).toLocaleDateString()}</dd></div>
+                </dl>
+                <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-[#454B54]">{booking.problemDescription}</p>
+                <RequestActions booking={booking} working={workingId === booking.id} onUpdate={(status) => void updateStatus(booking, status)} />
+              </article>
+            ))}
+          </div>
+          <DashboardTable>
+            <thead>
+              <tr>
+                <th className={tableHeaderClass}>Customer</th>
+                <th className={tableHeaderClass}>Service / problem</th>
+                <th className={tableHeaderClass}>Contact / address</th>
+                <th className={tableHeaderClass}>Preferred date</th>
+                <th className={tableHeaderClass}>Status</th>
+                <th className={tableHeaderClass}>Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#E5E7EB]">
+              {visibleBookings.map((booking) => (
+                <tr key={booking.id}>
+                  <td className={tableCellClass}>
+                    <p className="font-semibold text-[#172B4D]">{booking.customerName}</p>
+                    <p className="mt-1 text-xs text-[#737B87]">{booking.phone}</p>
+                  </td>
+                  <td className={`${tableCellClass} max-w-72`}>
+                    <p className="font-semibold text-[#172B4D]">{booking.serviceTitle}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-[#737B87]">{booking.problemDescription}</p>
+                  </td>
+                  <td className={`${tableCellClass} max-w-64`}>{booking.address}</td>
+                  <td className={tableCellClass}>{new Date(booking.preferredDate).toLocaleDateString()}</td>
+                  <td className={tableCellClass}><StatusBadge value={booking.status} /></td>
+                  <td className={tableCellClass}><RequestActions booking={booking} working={workingId === booking.id} onUpdate={(status) => void updateStatus(booking, status)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </DashboardTable>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RequestActions({
+  booking,
+  working,
+  onUpdate,
+}: {
+  booking: TechnicianBooking;
+  working: boolean;
+  onUpdate: (status: string) => void;
+}) {
+  const actions = actionMap[booking.status] ?? [];
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {actions.map((action) => (
+        <button
+          type="button"
+          key={action.status}
+          disabled={working}
+          onClick={() => onUpdate(action.status)}
+          className={`${action.status === "rejected" ? "rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50" : secondaryButtonClass} px-3 py-2 text-xs`}
+        >
+          {working ? "Saving..." : action.label}
+        </button>
+      ))}
+    </div>
+  );
+}

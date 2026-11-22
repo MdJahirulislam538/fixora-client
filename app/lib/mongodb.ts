@@ -1,7 +1,7 @@
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI as string;
-const dbName = process.env.MONGODB_DATABASE ?? "fixora";
+const dbName = process.env.MONGODB_DATABASE ?? "fixoraClientDb";
 
 if (!uri) {
   throw new Error("MONGODB_URI environment variable is not set");

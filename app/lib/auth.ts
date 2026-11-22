@@ -3,7 +3,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI as string;
-const dbName = process.env.MONGODB_DATABASE ?? "fixora";
+const dbName = process.env.MONGODB_DATABASE ?? "fixoraClientDb";
 
 if (!uri) {
   throw new Error("MONGODB_URI environment variable is not set");
@@ -40,6 +40,43 @@ export const auth = betterAuth({
         required: false,
         defaultValue: "customer",
         input: true, // allow client to send this field on sign-up
+      },
+      phone: {
+        type: "string",
+        required: false,
+        input: true,
+      },
+      area: {
+        type: "string",
+        required: false,
+        input: true,
+      },
+      bio: {
+        type: "string",
+        required: false,
+        input: true,
+      },
+    },
+  },
+
+  databaseHooks: {
+    user: {
+      create: {
+        async before(user) {
+          return {
+            data: {
+              ...user,
+              role: user.role === "technician" ? "technician" : "customer",
+            },
+          };
+        },
+      },
+      update: {
+        async before(user) {
+          const safeUser = { ...user };
+          Reflect.deleteProperty(safeUser, "role");
+          return { data: safeUser };
+        },
       },
     },
   },

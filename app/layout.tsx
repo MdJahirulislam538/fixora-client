@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./tailwind-built.css";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar";
+import { SiteChrome } from "@/components/SiteChrome";
 
 export const metadata: Metadata = {
   title: "FIXORA — Smart Device & Home Appliance Repair Service Platform",
@@ -33,9 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full scroll-smooth">
       <body className="min-h-full flex flex-col font-sans text-[#454B54] bg-[#FFFFFF] antialiased selection:bg-[#2563EB] selection:text-white">
-        <Navbar />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );

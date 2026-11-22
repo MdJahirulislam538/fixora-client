@@ -1,5 +1,14 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Dashboard integrations
+
+The customer checkout and image upload actions require these environment variables:
+
+- `STRIPE_SECRET_KEY` — Stripe secret API key. Checkout sessions charge booking prices in BDT.
+- `NEXT_PUBLIC_IMGBB_API_KEY` — ImgBB API key used for service and profile image uploads.
+
+The dashboard API stores service, booking, and payment records in the MongoDB database configured for the app. Role-protected endpoints use the current Better Auth session. Public signup cannot grant admin access; provision the first admin by assigning the `admin` role to a trusted Better Auth user in MongoDB.
+
 ## Getting Started
 
 First, run the development server:
