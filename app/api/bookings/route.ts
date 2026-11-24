@@ -3,6 +3,8 @@ import { Document } from "mongodb";
 import {
   getDashboardDb,
   isNonEmptyString,
+  isValidObjectId,
+  readJsonObject,
   requireDashboardUser,
   serializeDocument,
   toObjectId,
@@ -13,7 +15,7 @@ export async function POST(request: Request) {
   if (!access.user) return access.response;
 
   try {
-    const body = await request.json() as Record<string, unknown>;
+    const body = await readJsonObject(request);
     if (
       !isNonEmptyString(body.serviceId) ||
       !isNonEmptyString(body.phone) ||
@@ -24,9 +26,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Complete all booking fields." }, { status: 400 });
     }
 
+    const serviceId = body.serviceId.trim();
+    const preferredDateValue = body.preferredDate.trim();
+    const problemDescription = body.problemDescription.trim();
+    if (!isValidObjectId(serviceId)) {
+      return NextResponse.json({ message: "Choose a valid service." }, { status: 400 });
+    }
+    if (problemDescription.length < 20) {
+      return NextResponse.json(
+        { message: "Describe the problem in at least 20 characters." },
+        { status: 400 },
+      );
+    }
+
+    const preferredDate = new Date(`${preferredDateValue}T00:00:00.000Z`);
+    const today = new Date().toISOString().slice(0, 10);
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(preferredDateValue) ||
+      Number.isNaN(preferredDate.getTime()) ||
+      preferredDate.toISOString().slice(0, 10) !== preferredDateValue ||
+      preferredDateValue < today
+    ) {
+      return NextResponse.json({ message: "Choose today or a future date." }, { status: 400 });
+    }
+
     const db = await getDashboardDb();
     const service = await db.collection<Document>("services").findOne({
-      _id: toObjectId(body.serviceId),
+      _id: toObjectId(serviceId),
       approvalStatus: "approved",
       isAvailable: true,
     });
@@ -35,22 +61,18 @@ export async function POST(request: Request) {
     }
 
     const duplicate = await db.collection<Document>("bookings").findOne({
-      customerEmail: access.user.email,
-      serviceId: body.serviceId,
+      $or: [
+        { customerId: access.user.id },
+        { customerEmail: access.user.email },
+      ],
+      serviceId,
       status: { $in: ["requested", "accepted", "in-progress"] },
     });
     if (duplicate) {
-      return NextResponse.json({ message: "You already have an active request for this service." }, { status: 409 });
-    }
-
-    const preferredDate = new Date(`${body.preferredDate}T00:00:00.000Z`);
-    const today = new Date().toISOString().slice(0, 10);
-    if (
-      Number.isNaN(preferredDate.getTime()) ||
-      typeof body.preferredDate !== "string" ||
-      body.preferredDate < today
-    ) {
-      return NextResponse.json({ message: "Choose today or a future date." }, { status: 400 });
+      return NextResponse.json(
+        { message: "You already have an active request for this service" },
+        { status: 409 },
+      );
     }
 
     const basePrice = Number(service.startingPrice ?? service.basePrice);
@@ -62,15 +84,24 @@ export async function POST(request: Request) {
       serviceId: service._id?.toString(),
       serviceTitle: service.title,
       serviceImage: service.image ?? "",
+      serviceCategory: service.category ?? "",
+      serviceDescription: service.description ?? "",
+      estimatedDuration: service.estimatedDuration ?? "",
+      serviceMode: service.serviceMode ?? "",
+      serviceArea: service.serviceArea ?? "",
+      technicianId: technician.id ?? service.technicianId ?? "",
       technicianName: technician.name ?? service.technicianName ?? "",
       technicianEmail: service.technicianEmail ?? technician.email ?? "",
+      technicianPhoto: technician.photo ?? "",
+      technicianArea: technician.area ?? "",
+      technicianBio: technician.bio ?? "",
       customerId: access.user.id,
       customerName: access.user.name,
       customerEmail: access.user.email,
       phone: body.phone.trim(),
       address: body.address.trim(),
       preferredDate,
-      problemDescription: body.problemDescription.trim(),
+      problemDescription,
       basePrice,
       finalAmount: basePrice,
       status: "requested",

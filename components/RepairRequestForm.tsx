@@ -3,14 +3,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { authClient } from "../app/lib/auth-client";
 import { getServiceId, ServiceRecord } from "./ServiceData";
-
-interface SessionUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
 
 interface RepairRequestFormProps {
   service: ServiceRecord;
@@ -24,9 +18,8 @@ function getLocalDate() {
 
 export function RepairRequestForm({ service }: RepairRequestFormProps) {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [sessionState, setSessionState] = useState<"loading" | "ready" | "error">("loading");
-  const [sessionError, setSessionError] = useState("");
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const user = session?.user;
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
@@ -38,41 +31,8 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
   const [today, setToday] = useState("");
 
   useEffect(() => {
-    const controller = new AbortController();
     const timer = window.setTimeout(() => setToday(getLocalDate()), 0);
-
-    const loadSession = async () => {
-      try {
-        const response = await fetch("/api/auth/session", {
-          credentials: "same-origin",
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          if (response.status === 401) {
-            setUser(null);
-            setSessionState("ready");
-            return;
-          }
-          throw new Error("Unable to verify your sign-in. Please try again.");
-        }
-        const result = await response.json();
-        setUser(result.user ?? null);
-        setSessionState("ready");
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setSessionError(
-            error instanceof Error ? error.message : "Unable to verify your sign-in.",
-          );
-          setSessionState("error");
-        }
-      }
-    };
-
-    void loadSession();
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -132,11 +92,8 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
     }
   };
 
-  if (sessionState === "loading") {
+  if (sessionPending) {
     return <p className="mt-8 text-sm text-[#737B87]">Checking your account...</p>;
-  }
-  if (sessionState === "error") {
-    return <p role="alert" className="mt-8 text-sm text-red-700">{sessionError}</p>;
   }
   if (!user) {
     const returnTo = `${window.location.pathname}${window.location.search}`;

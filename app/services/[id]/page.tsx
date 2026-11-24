@@ -9,6 +9,7 @@ import {
   isRequestableService,
   ServiceRecord,
 } from "../../../components/ServiceData";
+import { RepairRequestForm } from "../../../components/RepairRequestForm";
 type LoadState = "loading" | "loaded" | "not-found" | "error";
 
 export default function ServiceDetailsPage() {
@@ -116,7 +117,16 @@ export default function ServiceDetailsPage() {
                 </div>
               </section>
 
+              <Link
+                href="#request-repair"
+                className="mt-6 inline-flex rounded-lg bg-[#2563EB] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1D4ED8]"
+              >
+                Request Repair
+              </Link>
             </div>
+          </div>
+          <div id="request-repair" className="scroll-mt-8">
+            <RepairRequestForm service={service} />
           </div>
         </article>
       )}
