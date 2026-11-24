@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { LoadingSkeleton } from "../../components/LoadingSkeleton";
 import {
   formatServiceMode,
   formatServicePrice,
@@ -11,11 +13,14 @@ import {
   ServiceRecord,
 } from "../../components/ServiceData";
 
-
 export default function ServicesPage() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [serviceMode, setServiceMode] = useState("");
+  const [sort, setSort] = useState("default");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -38,11 +43,11 @@ export default function ServicesPage() {
         setServices(records.filter(isRequestableService));
       } catch (loadError) {
         if (!controller.signal.aborted) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Unable to load services. Please try again later.",
-          );
+          const message = loadError instanceof Error
+            ? loadError.message
+            : "Unable to load services. Please try again later.";
+          setError(message);
+          toast.error(message);
         }
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
@@ -52,6 +57,31 @@ export default function ServicesPage() {
     void loadServices();
     return () => controller.abort();
   }, []);
+
+  const categories = Array.from(new Set(services.map((service) => service.category).filter(Boolean)));
+  const matchingServices = services
+    .filter((service) => {
+      const technician = getServiceTechnician(service);
+      const query = search.trim().toLowerCase();
+      const matchesSearch = !query || [
+        service.title,
+        service.category,
+        service.serviceArea,
+        technician.name,
+      ].some((value) => value?.toLowerCase().includes(query));
+      return matchesSearch &&
+        (!category || service.category === category) &&
+        (!serviceMode || formatServiceMode(service.serviceMode) === serviceMode);
+    })
+    .sort((left, right) => {
+      const leftPrice = Number(left.basePrice ?? left.startingPrice ?? 0);
+      const rightPrice = Number(right.basePrice ?? right.startingPrice ?? 0);
+      return sort === "price-low" ? leftPrice - rightPrice
+        : sort === "price-high" ? rightPrice - leftPrice
+        : 0;
+    });
+
+  if (isLoading) return <LoadingSkeleton label="Loading services" cards={8} />;
 
   return (
       <main className="min-h-screen bg-[#F5F7FA]">
@@ -64,11 +94,7 @@ export default function ServicesPage() {
             </p>
           </div>
 
-          {isLoading ? (
-            <p className="rounded-xl border border-[#E5E7EB] bg-white p-8 text-center text-sm text-[#737B87]">
-              Loading services...
-            </p>
-          ) : error ? (
+          {error ? (
             <div role="alert" className="rounded-xl border border-red-200 bg-white p-8 text-center text-sm text-red-700">
               {error}
             </div>
@@ -78,10 +104,59 @@ export default function ServicesPage() {
               <p className="mt-2 text-sm text-[#737B87]">
                 Please check back soon. New approved services will appear here.
               </p>
+              <Link href="/" className="mt-5 inline-flex rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">
+                Back to Home
+              </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {services.map((service) => {
+            <>
+              <div className="mb-6 grid gap-3 rounded-xl border border-[#E5E7EB] bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="text-xs font-semibold text-[#454B54] sm:col-span-2 lg:col-span-1">
+                  Search services
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Title, category, area, technician"
+                    className="mt-1.5 w-full rounded-lg border border-[#D7DCE3] px-3 py-2.5 text-sm font-normal"
+                  />
+                </label>
+                <label className="text-xs font-semibold text-[#454B54]">
+                  Category
+                  <select value={category} onChange={(event) => setCategory(event.target.value)} className="mt-1.5 w-full rounded-lg border border-[#D7DCE3] bg-white px-3 py-2.5 text-sm font-normal">
+                    <option value="">All categories</option>
+                    {categories.map((value) => <option key={value} value={value}>{value}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-[#454B54]">
+                  Service mode
+                  <select value={serviceMode} onChange={(event) => setServiceMode(event.target.value)} className="mt-1.5 w-full rounded-lg border border-[#D7DCE3] bg-white px-3 py-2.5 text-sm font-normal">
+                    <option value="">All modes</option>
+                    <option value="Home Visit">Home Visit</option>
+                    <option value="Shop Drop-off">Shop Drop-off</option>
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-[#454B54]">
+                  Sort by price
+                  <select value={sort} onChange={(event) => setSort(event.target.value)} className="mt-1.5 w-full rounded-lg border border-[#D7DCE3] bg-white px-3 py-2.5 text-sm font-normal">
+                    <option value="default">Recommended</option>
+                    <option value="price-low">Lowest first</option>
+                    <option value="price-high">Highest first</option>
+                  </select>
+                </label>
+              </div>
+
+              {matchingServices.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#CBD5E1] bg-white px-6 py-14 text-center">
+                  <h2 className="text-lg font-semibold text-[#172B4D]">No matching services</h2>
+                  <p className="mt-2 text-sm text-[#737B87]">Try changing your search or filters.</p>
+                  <button type="button" onClick={() => { setSearch(""); setCategory(""); setServiceMode(""); setSort("default"); }} className="mt-5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {matchingServices.map((service) => {
                 const technician = getServiceTechnician(service);
                 return (
                   <article
@@ -128,7 +203,9 @@ export default function ServicesPage() {
                   </article>
                 );
               })}
-            </div>
+                </div>
+              )}
+            </>
           )}
         </section>
       </main>

@@ -11,6 +11,8 @@ import {
   ServiceRecord,
 } from "../../../components/ServiceData";
 import { RepairRequestForm } from "../../../components/RepairRequestForm";
+import { LoadingSkeleton } from "../../../components/LoadingSkeleton";
+import { toast } from "sonner";
 type LoadState = "loading" | "loaded" | "not-found" | "error";
 
 export default function ServiceDetailsPage() {
@@ -40,8 +42,11 @@ export default function ServiceDetailsPage() {
         }
         setService(record);
         setState("loaded");
-      } catch {
-        if (!controller.signal.aborted) setState("error");
+      } catch (loadError) {
+        if (!controller.signal.aborted) {
+          setState("error");
+          toast.error(loadError instanceof Error ? loadError.message : "Unable to load this service.");
+        }
       }
     };
 
@@ -51,11 +56,11 @@ export default function ServiceDetailsPage() {
 
   const technician = service ? getServiceTechnician(service) : null;
 
+  if (state === "loading") return <LoadingSkeleton label="Loading service details" cards={1} />;
+
   return (
       <main className="min-h-screen bg-[#F5F7FA]">
-      {state === "loading" ? (
-        <p className="mx-auto max-w-7xl px-4 py-12 text-sm text-[#737B87]">Loading service details...</p>
-      ) : state === "not-found" ? (
+      {state === "not-found" ? (
         <section className="mx-auto max-w-2xl px-4 py-20 text-center">
           <p className="text-sm font-bold uppercase tracking-wider text-[#2563EB]">404</p>
           <h1 className="mt-2 text-3xl font-bold text-[#172B4D]">Service not found</h1>

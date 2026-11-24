@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
 import { authClient } from "../../../../app/lib/auth-client";
 import {
   DashboardEmpty,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   DashboardTable,
   tableCellClass,
@@ -68,6 +71,7 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ role }),
       });
       setNotice(`Updated ${user.name || user.email}'s role.`);
+      toast.success(`Updated ${user.name || user.email}'s role.`);
       await loadUsers();
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Unable to update this role.");
@@ -82,9 +86,11 @@ export default function AdminUsersPage() {
       {notice && <p role="status" className="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {loading ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading users...</p>
+        <DashboardLoading label="Loading users" />
       ) : users.length === 0 ? (
-        <DashboardEmpty>No user accounts were found.</DashboardEmpty>
+        <DashboardEmpty action={<Link href="/dashboard" className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">Go to dashboard</Link>}>
+          No user accounts were found.
+        </DashboardEmpty>
       ) : (
         <>
           <div className="space-y-3 md:hidden">

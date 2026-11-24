@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   DashboardEmpty,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   DashboardTable,
   StatusBadge,
@@ -63,9 +65,13 @@ export default function AdminBookingsPage() {
       </label>
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {loading ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading bookings...</p>
+        <DashboardLoading label="Loading bookings" />
       ) : bookings.length === 0 ? (
-        <DashboardEmpty>No bookings match this status.</DashboardEmpty>
+        <DashboardEmpty action={status === "all"
+          ? <Link href="/dashboard" className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">Go to dashboard</Link>
+          : <button type="button" onClick={() => { setStatus("all"); setLoading(true); }} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">View all bookings</button>}>
+          No bookings match this status.
+        </DashboardEmpty>
       ) : (
         <>
           <div className="space-y-3 md:hidden">

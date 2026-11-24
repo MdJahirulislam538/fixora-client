@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { FixoraLogo } from "./FixoraLogo";
 import { authClient } from "../app/lib/auth-client";
 import {
@@ -66,14 +67,17 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
     try {
       const { error } = await authClient.signOut();
       if (error) {
-        setSignOutError(error.message || "Unable to sign out. Please try again.");
+        const message = error.message || "Unable to sign out. Please try again.";
+        setSignOutError(message);
+        toast.error(message);
         return;
       }
       setIsOpen(false);
+      toast.success("Signed out.");
     } catch (error) {
-      setSignOutError(
-        error instanceof Error ? error.message : "Unable to sign out. Please try again.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to sign out. Please try again.";
+      setSignOutError(message);
+      toast.error(message);
     }
   };
 

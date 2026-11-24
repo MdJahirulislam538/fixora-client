@@ -1,8 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { authClient } from "../../../app/lib/auth-client";
-import { DashboardError, DashboardPageHeading, primaryButtonClass } from "../../../components/dashboard/DashboardComponents";
+import { DashboardError, DashboardLoading, DashboardPageHeading, primaryButtonClass } from "../../../components/dashboard/DashboardComponents";
 import { dashboardRequest, uploadDashboardImage } from "../../../components/dashboard/api";
 
 interface ProfileFields {
@@ -54,9 +55,13 @@ export default function UpdateProfilePage() {
     }
 
     setIsSaving(true);
+    let canToastSaveError = !file;
     try {
       let image = user.image ?? "";
-      if (file) image = await uploadDashboardImage(file);
+      if (file) {
+        image = await uploadDashboardImage(file);
+        canToastSaveError = true;
+      }
       const { error: updateError } = await authClient.updateUser({
         name: updatedName.trim(),
         image,
@@ -68,9 +73,12 @@ export default function UpdateProfilePage() {
         throw new Error(updateError.message || "Unable to save your profile.");
       }
       setNotice("Your profile has been updated.");
+      toast.success("Your profile has been updated.");
       setFile(null);
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save your profile.");
+      const message = saveError instanceof Error ? saveError.message : "Unable to save your profile.";
+      setError(message);
+      if (canToastSaveError) toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -89,7 +97,7 @@ export default function UpdateProfilePage() {
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {notice && <p role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
       {isLoading || !session?.user ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading profile...</p>
+        <DashboardLoading label="Loading profile" />
       ) : (
         <section className="max-w-3xl rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm sm:p-7">
           <div className="mb-6 flex items-center gap-4">

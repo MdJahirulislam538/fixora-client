@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
 import {
   DashboardEmpty,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   DashboardTable,
   StatusBadge,
@@ -43,6 +46,7 @@ export default function TechnicianRequestsPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [workingId, setWorkingId] = useState("");
+  const [rejectTarget, setRejectTarget] = useState<TechnicianBooking | null>(null);
 
   const loadBookings = useCallback(async () => {
     const result = await dashboardRequest<{ bookings: TechnicianBooking[] }>("/api/dashboard/requests");
@@ -71,7 +75,7 @@ export default function TechnicianRequestsPage() {
     booking: TechnicianBooking,
     status: string,
     finalAmount?: number,
-  ) => {
+  ): Promise<boolean> => {
     setError("");
     setWorkingId(booking.id);
     try {
@@ -80,11 +84,27 @@ export default function TechnicianRequestsPage() {
         body: JSON.stringify({ status, ...(finalAmount !== undefined ? { finalAmount } : {}) }),
       });
       await loadBookings();
+      toast.success(status === "completed" ? "Job marked completed." : status === "in-progress" ? "Job started." : `Request ${status}.`);
+      return true;
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : "Unable to update this request.");
+      return false;
     } finally {
       setWorkingId("");
     }
+  };
+
+  const requestStatusUpdate = (booking: TechnicianBooking, status: string, finalAmount?: number) => {
+    if (status === "rejected") {
+      setRejectTarget(booking);
+      return;
+    }
+    void updateStatus(booking, status, finalAmount);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    if (await updateStatus(rejectTarget, "rejected")) setRejectTarget(null);
   };
 
   const visibleBookings = filter === "all"
@@ -115,9 +135,13 @@ export default function TechnicianRequestsPage() {
       </div>
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {isLoading ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading requests...</p>
+        <DashboardLoading label="Loading requests" />
       ) : visibleBookings.length === 0 ? (
-        <DashboardEmpty>No requests match this status.</DashboardEmpty>
+        <DashboardEmpty action={bookings.length === 0
+          ? <Link href="/dashboard/technician/add-service" className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">Add a service</Link>
+          : <button type="button" onClick={() => setFilter("all")} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">Show all requests</button>}>
+          {bookings.length === 0 ? "You don't have any repair requests yet." : "No requests match this status."}
+        </DashboardEmpty>
       ) : (
         <>
           <div className="space-y-4 md:hidden">
@@ -134,7 +158,7 @@ export default function TechnicianRequestsPage() {
                   <div><dt className="inline font-semibold">Preferred date: </dt><dd className="inline">{new Date(booking.preferredDate).toLocaleDateString()}</dd></div>
                 </dl>
                 <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-[#454B54]">{booking.problemDescription}</p>
-                <RequestActions booking={booking} working={workingId === booking.id} onUpdate={(status) => void updateStatus(booking, status)} />
+                <RequestActions booking={booking} working={workingId === booking.id} onUpdate={(status, amount) => requestStatusUpdate(booking, status, amount)} />
               </article>
             ))}
           </div>
@@ -163,12 +187,26 @@ export default function TechnicianRequestsPage() {
                   <td className={`${tableCellClass} max-w-64`}>{booking.address}</td>
                   <td className={tableCellClass}>{new Date(booking.preferredDate).toLocaleDateString()}</td>
                   <td className={tableCellClass}><StatusBadge value={booking.status} /></td>
-                  <td className={tableCellClass}><RequestActions booking={booking} working={workingId === booking.id} onUpdate={(status) => void updateStatus(booking, status)} /></td>
+                  <td className={tableCellClass}><RequestActions booking={booking} working={workingId === booking.id} onUpdate={(status, amount) => requestStatusUpdate(booking, status, amount)} /></td>
                 </tr>
               ))}
             </tbody>
           </DashboardTable>
         </>
+      )}
+      {rejectTarget && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4">
+          <section role="dialog" aria-modal="true" aria-labelledby="reject-request-title" className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 id="reject-request-title" className="text-lg font-bold text-[#172B4D]">Reject this request?</h2>
+            <p className="mt-2 text-sm text-[#737B87]">The request for {rejectTarget.serviceTitle} from {rejectTarget.customerName} will be rejected.</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" className={secondaryButtonClass} disabled={workingId === rejectTarget.id} onClick={() => setRejectTarget(null)}>Keep request</button>
+              <button type="button" className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60" disabled={workingId === rejectTarget.id} onClick={() => void confirmReject()}>
+                {workingId === rejectTarget.id ? "Rejecting..." : "Reject request"}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

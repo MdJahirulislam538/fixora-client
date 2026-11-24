@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { authClient } from "../../lib/auth-client";
 import { EyeIcon, EyeOffIcon } from "../../../components/icons/Icons";
 
@@ -54,7 +55,10 @@ export default function SignInPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Check the highlighted sign-in fields.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -64,17 +68,20 @@ export default function SignInPage() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Unable to sign in. Please check your details.");
+        const message = error.message || "Unable to sign in. Please check your details.";
+        setErrorMessage(message);
+        toast.error(message);
         return;
       }
 
+      toast.success("Welcome back.");
       const redirectTo = new URLSearchParams(window.location.search).get("redirectTo");
       router.replace(getRedirectDestination(redirectTo));
       router.refresh();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to sign in. Please try again.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to sign in. Please try again.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -93,12 +100,14 @@ export default function SignInPage() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Unable to sign in with Google.");
+        const message = error.message || "Unable to sign in with Google.";
+        setErrorMessage(message);
+        toast.error(message);
       }
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to sign in with Google.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to sign in with Google.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

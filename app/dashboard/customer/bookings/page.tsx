@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
 import {
   DashboardEmpty,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   DashboardTable,
   StatusBadge,
@@ -62,9 +65,11 @@ export default function CustomerBookingsPage() {
             body: JSON.stringify({ sessionId }),
           });
           setNotice("Payment received. Your booking is marked as paid.");
+          toast.success("Payment received. Your booking is marked as paid.");
           window.history.replaceState({}, "", "/dashboard/customer/bookings");
         } else if (params.get("checkout") === "cancelled") {
           setNotice("Checkout was cancelled. You can try again whenever you are ready.");
+          toast.info("Checkout was cancelled.");
           window.history.replaceState({}, "", "/dashboard/customer/bookings");
         }
         await loadBookings();
@@ -91,6 +96,7 @@ export default function CustomerBookingsPage() {
       });
       setCancelTarget(null);
       setNotice("Booking cancelled.");
+      toast.success("Booking cancelled.");
       await loadBookings();
     } catch (cancelError) {
       setError(cancelError instanceof Error ? cancelError.message : "Unable to cancel this booking.");
@@ -128,9 +134,11 @@ export default function CustomerBookingsPage() {
       )}
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {isLoading ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading bookings...</p>
+        <DashboardLoading label="Loading bookings" />
       ) : bookings.length === 0 ? (
-        <DashboardEmpty>You don&apos;t have any bookings yet.</DashboardEmpty>
+        <DashboardEmpty action={<Link href="/services" className={primaryButtonClass}>Browse services</Link>}>
+          You don&apos;t have any bookings yet.
+        </DashboardEmpty>
       ) : (
         <>
           <div className="space-y-4 md:hidden">

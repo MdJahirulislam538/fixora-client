@@ -9,6 +9,16 @@ The customer checkout and image upload actions require these environment variabl
 
 The dashboard API stores service, booking, and payment records in the MongoDB database configured for the app. Role-protected endpoints use the current Better Auth session. Public signup cannot grant admin access; provision the first admin by assigning the `admin` role to a trusted Better Auth user in MongoDB.
 
+## Demo data
+
+The demo seed is additive: it refuses to overwrite an existing demo account and uses a ledger to prevent duplicate runs. Run it only against an isolated development or staging database while the local app is available at `http://localhost:3000`:
+
+```bash
+npm run seed:demo -- --confirm-nonproduction
+```
+
+The script creates five technician accounts, fifteen service listings (twelve approved and three pending), sample bookings in multiple statuses, and one matching payment record. It prints one-time generated passwords for the new demo accounts; change them after testing. It does not update or delete existing user accounts or other records.
+
 ## Getting Started
 
 First, run the development server:

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { authClient } from "../../lib/auth-client";
 import { EyeIcon, EyeOffIcon } from "../../../components/icons/Icons";
 
@@ -55,7 +56,10 @@ export default function SignUpPage() {
     event.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Check the highlighted sign-up fields.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -68,7 +72,9 @@ export default function SignUpPage() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Unable to create your account. Please try again.");
+        const message = error.message || "Unable to create your account. Please try again.";
+        setErrorMessage(message);
+        toast.error(message);
         return;
       }
 
@@ -79,12 +85,13 @@ export default function SignUpPage() {
       setSuccessMessage(
         `Your ${role} account was created and saved. You are now signed in.`,
       );
+      toast.success("Your account is ready.");
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to create your account. Please try again.",
-      );
+      const message = error instanceof Error
+        ? error.message
+        : "Unable to create your account. Please try again.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -106,12 +113,14 @@ export default function SignUpPage() {
       });
 
       if (error) {
-        setErrorMessage(error.message || "Unable to sign up with Google.");
+        const message = error.message || "Unable to sign up with Google.";
+        setErrorMessage(message);
+        toast.error(message);
       }
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to sign up with Google.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to sign up with Google.";
+      setErrorMessage(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./tailwind-built.css";
 import { SiteChrome } from "@/components/SiteChrome";
+import { ToastProvider } from "@/components/ToastProvider";
 
 export const metadata: Metadata = {
   title: "FIXORA — Smart Device & Home Appliance Repair Service Platform",
@@ -33,6 +34,7 @@ export default function RootLayout({
     <html lang="en" className="h-full scroll-smooth">
       <body className="min-h-full flex flex-col font-sans text-[#454B54] bg-[#FFFFFF] antialiased selection:bg-[#2563EB] selection:text-white">
         <SiteChrome>{children}</SiteChrome>
+        <ToastProvider />
       </body>
     </html>
   );

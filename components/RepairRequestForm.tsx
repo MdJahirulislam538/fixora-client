@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast as notify } from "sonner";
 import { authClient } from "../app/lib/auth-client";
 import { getServiceId, ServiceRecord } from "./ServiceData";
 
@@ -25,7 +26,7 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
   const [preferredDate, setPreferredDate] = useState("");
   const [problemDescription, setProblemDescription] = useState("");
   const [formError, setFormError] = useState("");
-  const [toast, setToast] = useState("");
+  const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [today, setToday] = useState("");
@@ -38,18 +39,21 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
-    setToast("");
+    setFeedback("");
 
     if (!phone.trim() || !address.trim() || !preferredDate || !problemDescription.trim()) {
       setFormError("Complete all fields before submitting.");
+      notify.error("Complete all fields before submitting.");
       return;
     }
     if (preferredDate < getLocalDate()) {
       setFormError("Choose today or a future date.");
+      notify.error("Choose today or a future date.");
       return;
     }
     if (problemDescription.trim().length < 20) {
       setFormError("Describe the problem in at least 20 characters.");
+      notify.error("Describe the problem in at least 20 characters.");
       return;
     }
 
@@ -74,6 +78,7 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
       }
       if (response.status === 401) {
         const returnTo = `${window.location.pathname}${window.location.search}`;
+        notify.info("Please sign in as a customer to request this repair.");
         router.push(`/sign-in?redirectTo=${encodeURIComponent(returnTo)}`);
         return;
       }
@@ -82,18 +87,19 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
       }
 
       setHasSubmitted(true);
-      setToast("Repair request submitted successfully.");
+      setFeedback("Repair request submitted successfully.");
+      notify.success("Repair request submitted successfully.");
     } catch (error) {
-      setToast(
-        error instanceof Error ? error.message : "Unable to submit your repair request.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to submit your repair request.";
+      setFeedback(message);
+      notify.error(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   if (sessionPending) {
-    return <p className="mt-8 text-sm text-[#737B87]">Checking your account...</p>;
+    return <p aria-busy="true" className="mt-8 h-5 w-48 animate-pulse rounded bg-slate-200" />;
   }
   if (!user) {
     const returnTo = `${window.location.pathname}${window.location.search}`;
@@ -124,7 +130,7 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
           role="status"
           className="fixed right-4 top-4 z-50 max-w-sm rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg"
         >
-          {toast}
+          {feedback}
         </div>
         <div className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50 p-5">
           <p className="text-sm text-emerald-800">Your repair request is in your bookings.</p>
@@ -178,9 +184,9 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
           {isSubmitting ? "Submitting request..." : "Submit Repair Request"}
         </button>
       </form>
-      {toast && (
+      {feedback && (
         <div role="alert" className="fixed right-4 top-4 z-50 max-w-sm rounded-lg bg-red-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
+          {feedback}
         </div>
       )}
     </div>

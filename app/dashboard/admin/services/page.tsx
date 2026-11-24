@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
 import {
   DashboardEmpty,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   DashboardTable,
   StatusBadge,
@@ -37,6 +40,7 @@ export default function AdminServicesPage() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState("");
+  const [rejectTarget, setRejectTarget] = useState<Service | null>(null);
 
   const loadServices = useCallback(async () => {
     const query = filter === "all" ? "" : `?approvalStatus=${encodeURIComponent(filter)}`;
@@ -63,7 +67,7 @@ export default function AdminServicesPage() {
     };
   }, [filter]);
 
-  const review = async (service: Service, approvalStatus: "approved" | "rejected") => {
+  const review = async (service: Service, approvalStatus: "approved" | "rejected"): Promise<boolean> => {
     setWorkingId(service.id);
     setError("");
     try {
@@ -73,11 +77,27 @@ export default function AdminServicesPage() {
       });
       setNotice(`${service.title} ${approvalStatus}.`);
       await loadServices();
+      toast.success(`${service.title} ${approvalStatus}.`);
+      return true;
     } catch (reviewError) {
       setError(reviewError instanceof Error ? reviewError.message : "Unable to update service approval.");
+      return false;
     } finally {
       setWorkingId("");
     }
+  };
+
+  const requestReview = (service: Service, approvalStatus: "approved" | "rejected") => {
+    if (approvalStatus === "rejected") {
+      setRejectTarget(service);
+      return;
+    }
+    void review(service, approvalStatus);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    if (await review(rejectTarget, "rejected")) setRejectTarget(null);
   };
 
   return (
@@ -93,9 +113,13 @@ export default function AdminServicesPage() {
       {notice && <p role="status" className="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {loading ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading service submissions...</p>
+        <DashboardLoading label="Loading service submissions" />
       ) : services.length === 0 ? (
-        <DashboardEmpty>No services in this approval category.</DashboardEmpty>
+        <DashboardEmpty action={filter === "all"
+          ? <Link href="/dashboard" className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">Go to dashboard</Link>
+          : <button type="button" onClick={() => { setFilter("all"); setLoading(true); }} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">View all services</button>}>
+          No services in this approval category.
+        </DashboardEmpty>
       ) : (
         <>
           <div className="space-y-3 md:hidden">
@@ -108,7 +132,7 @@ export default function AdminServicesPage() {
                     <div className="min-w-0"><h3 className="font-semibold text-[#172B4D]">{service.title}</h3><p className="text-xs text-[#737B87]">{service.category} · {technician.name}</p></div>
                   </div>
                   <div className="mt-3 flex items-center justify-between"><StatusBadge value={service.approvalStatus} /><span className="font-semibold">{formatServicePrice(service)}</span></div>
-                  <ReviewActions service={service} working={workingId === service.id} onReview={(status) => void review(service, status)} />
+                  <ReviewActions service={service} working={workingId === service.id} onReview={(status) => requestReview(service, status)} />
                 </article>
               );
             })}
@@ -125,13 +149,27 @@ export default function AdminServicesPage() {
                     <td className={tableCellClass}>{formatServicePrice(service)}</td>
                     <td className={tableCellClass}><StatusBadge value={service.approvalStatus} /></td>
                     <td className={tableCellClass}>{service.isAvailable ? "Available" : "Unavailable"}</td>
-                    <td className={tableCellClass}><ReviewActions service={service} working={workingId === service.id} onReview={(status) => void review(service, status)} /></td>
+                    <td className={tableCellClass}><ReviewActions service={service} working={workingId === service.id} onReview={(status) => requestReview(service, status)} /></td>
                   </tr>
                 );
               })}
             </tbody>
           </DashboardTable>
         </>
+      )}
+      {rejectTarget && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 p-4">
+          <section role="dialog" aria-modal="true" aria-labelledby="reject-service-title" className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 id="reject-service-title" className="text-lg font-bold text-[#172B4D]">Reject this service?</h2>
+            <p className="mt-2 text-sm text-[#737B87]">{rejectTarget.title} will not be available to customers.</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" className={secondaryButtonClass} disabled={workingId === rejectTarget.id} onClick={() => setRejectTarget(null)}>Keep service</button>
+              <button type="button" className="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60" disabled={workingId === rejectTarget.id} onClick={() => void confirmReject()}>
+                {workingId === rejectTarget.id ? "Rejecting..." : "Reject service"}
+              </button>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

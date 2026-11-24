@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityChart,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   StatsCards,
 } from "./DashboardComponents";
@@ -50,7 +51,7 @@ export function DashboardOverview({
       {error ? (
         <DashboardError>{error}</DashboardError>
       ) : !data ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading overview...</p>
+        <DashboardLoading label="Loading overview" />
       ) : (
         <>
           <StatsCards stats={data.stats} />

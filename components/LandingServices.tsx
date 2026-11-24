@@ -11,6 +11,7 @@ import {
   ServiceRecord,
 } from "./ServiceData";
 import { RepairRequestForm } from "./RepairRequestForm";
+import { toast } from "sonner";
 
 export function LandingServices() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
@@ -38,11 +39,11 @@ export function LandingServices() {
         setServices(records.filter((service) => service.approvalStatus === "approved"));
       } catch (loadError) {
         if (!controller.signal.aborted) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Unable to load services. Please try again later.",
-          );
+          const message = loadError instanceof Error
+            ? loadError.message
+            : "Unable to load services. Please try again later.";
+          setError(message);
+          toast.error(message);
         }
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
@@ -89,9 +90,14 @@ export function LandingServices() {
         </div>
 
         {isLoading ? (
-          <p className="rounded-xl border border-[#E5E7EB] bg-white p-8 text-center text-sm text-[#737B87]">
-            Loading services...
-          </p>
+          <div aria-busy="true" aria-label="Loading services" className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div key={index} className="animate-pulse overflow-hidden rounded-xl border border-[#E5E7EB] bg-white">
+                <div className="h-48 bg-slate-200" />
+                <div className="space-y-3 p-5"><div className="h-5 w-3/4 rounded bg-slate-200" /><div className="h-4 w-1/2 rounded bg-slate-100" /><div className="h-10 rounded-lg bg-blue-50" /></div>
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <p role="alert" className="rounded-xl border border-red-200 bg-white p-8 text-center text-sm text-red-700">
             {error}
@@ -104,6 +110,9 @@ export function LandingServices() {
             <p className="mt-2 text-sm text-[#737B87]">
               Approved services will appear here. Please check back soon.
             </p>
+            <Link href="/services" className="mt-5 inline-flex rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">
+              Browse services
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

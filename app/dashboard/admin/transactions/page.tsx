@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   DashboardEmpty,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   DashboardTable,
   tableCellClass,
@@ -54,9 +56,11 @@ export default function AdminTransactionsPage() {
       </section>
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {loading ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading transactions...</p>
+        <DashboardLoading label="Loading transactions" />
       ) : payments.length === 0 ? (
-        <DashboardEmpty>No transactions have been recorded yet.</DashboardEmpty>
+        <DashboardEmpty action={<Link href="/dashboard/admin/bookings" className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">Review bookings</Link>}>
+          No transactions have been recorded yet.
+        </DashboardEmpty>
       ) : (
         <>
           <div className="space-y-3 md:hidden">

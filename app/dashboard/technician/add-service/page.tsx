@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { authClient } from "../../../../app/lib/auth-client";
-import { DashboardPageHeading } from "../../../../components/dashboard/DashboardComponents";
+import { DashboardLoading, DashboardPageHeading } from "../../../../components/dashboard/DashboardComponents";
 import { dashboardRequest } from "../../../../components/dashboard/api";
 import { ServiceForm, ServiceFormValue } from "../../../../components/dashboard/ServiceForm";
 
@@ -18,6 +19,7 @@ export default function AddServicePage() {
       body: JSON.stringify(value),
     });
     setNotice("Your service is waiting for admin approval.");
+    toast.success("Your service is waiting for admin approval.");
     window.setTimeout(() => router.push("/dashboard/technician/my-services"), 1200);
   };
 
@@ -38,7 +40,7 @@ export default function AddServicePage() {
             onSave={save}
           />
         ) : (
-          <p className="text-sm text-[#737B87]">Loading your account...</p>
+          <DashboardLoading label="Loading your account" />
         )}
       </section>
     </div>

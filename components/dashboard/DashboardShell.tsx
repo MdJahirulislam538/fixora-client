@@ -3,7 +3,9 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { authClient } from "../../app/lib/auth-client";
+import { DashboardLoading } from "./DashboardComponents";
 
 type Role = "customer" | "technician" | "admin";
 
@@ -61,14 +63,17 @@ export function DashboardShell({ children }: DashboardShellProps) {
     try {
       const { error } = await authClient.signOut();
       if (error) {
-        setSignOutError(error.message || "Unable to sign out.");
+        const message = error.message || "Unable to sign out.";
+        setSignOutError(message);
+        toast.error(message);
         return;
       }
+      toast.success("Signed out.");
       router.replace("/");
     } catch (error) {
-      setSignOutError(
-        error instanceof Error ? error.message : "Unable to sign out.",
-      );
+      const message = error instanceof Error ? error.message : "Unable to sign out.";
+      setSignOutError(message);
+      toast.error(message);
     }
   };
 
@@ -91,8 +96,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   if (isPending || !user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F5F7FA]">
-        <p className="text-sm font-medium text-[#737B87]">Loading your dashboard...</p>
+      <main className="min-h-screen bg-[#F5F7FA] p-6 sm:p-8">
+        <DashboardLoading label="Loading your dashboard" />
       </main>
     );
   }

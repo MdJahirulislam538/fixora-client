@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
 import { authClient } from "../../../../app/lib/auth-client";
 import {
   formatServicePrice,
@@ -9,6 +11,7 @@ import {
 import {
   DashboardEmpty,
   DashboardError,
+  DashboardLoading,
   DashboardPageHeading,
   DashboardTable,
   StatusBadge,
@@ -65,6 +68,7 @@ export default function TechnicianServicesPage() {
     });
     setEditing(null);
     setNotice("Service updated and sent back for approval.");
+    toast.success("Service updated and sent back for approval.");
     await loadServices();
   };
 
@@ -75,6 +79,7 @@ export default function TechnicianServicesPage() {
         method: "PATCH",
         body: JSON.stringify({ isAvailable: !service.isAvailable }),
       });
+      toast.success(`Availability turned ${service.isAvailable ? "off" : "on"}.`);
       await loadServices();
     } catch (toggleError) {
       setError(toggleError instanceof Error ? toggleError.message : "Unable to update availability.");
@@ -90,6 +95,7 @@ export default function TechnicianServicesPage() {
       });
       setDeleting(null);
       setNotice("Service deleted.");
+      toast.success("Service deleted.");
       await loadServices();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Unable to delete this service.");
@@ -106,9 +112,11 @@ export default function TechnicianServicesPage() {
       {notice && <p role="status" className="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
       {error && <div className="mb-4"><DashboardError>{error}</DashboardError></div>}
       {isLoading ? (
-        <p className="py-10 text-center text-sm text-[#737B87]">Loading services...</p>
+        <DashboardLoading label="Loading services" />
       ) : services.length === 0 ? (
-        <DashboardEmpty>You haven&apos;t submitted any services yet.</DashboardEmpty>
+        <DashboardEmpty action={<Link href="/dashboard/technician/add-service" className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1D4ED8]">Add a service</Link>}>
+          You haven&apos;t submitted any services yet.
+        </DashboardEmpty>
       ) : (
         <>
           <div className="space-y-3 md:hidden">
