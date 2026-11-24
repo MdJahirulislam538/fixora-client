@@ -3,10 +3,6 @@
 import React, { useState } from "react";
 import { Hero } from "../components/Hero";
 import { TrustBar } from "../components/TrustBar";
-import {
-  ServiceCategories,
-  ServiceCategoryItem,
-} from "../components/ServiceCategories";
 import { LandingServices } from "../components/LandingServices";
 import { HumanConnection } from "../components/HumanConnection";
 import { HowItWorks } from "../components/HowItWorks";
@@ -16,12 +12,9 @@ import { ServiceLocations } from "../components/ServiceLocations";
 import { AboutSection } from "../components/AboutSection";
 import { FAQSection } from "../components/FAQSection";
 import { CallToAction } from "../components/CallToAction";
-import { ServiceDetailModal } from "../components/ServiceDetailModal";
 import { TrackServiceModal } from "../components/TrackServiceModal";
 
 export default function Home() {
-  const [selectedServiceForModal, setSelectedServiceForModal] =
-    useState<ServiceCategoryItem | null>(null);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const scrollToBooking = () => {
     document.getElementById("landing-services")?.scrollIntoView({ behavior: "smooth" });
@@ -46,12 +39,6 @@ export default function Home() {
 
         {/* Approved services available to book */}
         <LandingServices />
-
-        {/* Service category overview */}
-        <ServiceCategories
-          onSelectService={(service) => setSelectedServiceForModal(service)}
-          onBookService={scrollToBooking}
-        />
 
         {/* 9. Human Connection Section ("SERVICE IS PERSONAL") */}
         <HumanConnection />
@@ -88,13 +75,6 @@ export default function Home() {
         />
       </main>
 
-
-      {/* Interactive Modals */}
-      <ServiceDetailModal
-        service={selectedServiceForModal}
-        onClose={() => setSelectedServiceForModal(null)}
-        onBookThis={scrollToBooking}
-      />
 
       <TrackServiceModal
         isOpen={isTrackerOpen}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   formatServiceMode,
   formatServicePrice,
+  getServicePrice,
   getServiceId,
   getServiceTechnician,
   isRequestableService,
@@ -18,6 +19,7 @@ export function LandingServices() {
   const [selectedService, setSelectedService] = useState<ServiceRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sortOrder, setSortOrder] = useState("recommended");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,6 +65,21 @@ export function LandingServices() {
     }
   }, [selectedService]);
 
+  const displayedServices = [...services].sort((left, right) => {
+    if (sortOrder === "category") {
+      return left.category.localeCompare(right.category, undefined, { sensitivity: "base" }) ||
+        left.title.localeCompare(right.title, undefined, { sensitivity: "base" });
+    }
+
+    const leftPrice = Number(String(getServicePrice(left)).replace(/[^\d.-]/g, "")) || 0;
+    const rightPrice = Number(String(getServicePrice(right)).replace(/[^\d.-]/g, "")) || 0;
+    return sortOrder === "price-low"
+      ? leftPrice - rightPrice
+      : sortOrder === "price-high"
+        ? rightPrice - leftPrice
+        : 0;
+  });
+
   return (
     <section
       id="landing-services"
@@ -81,12 +98,28 @@ export function LandingServices() {
               Choose an approved service to submit a repair request.
             </p>
           </div>
-          <Link
-            href="/services"
-            className="text-sm font-semibold text-[#2563EB] hover:underline"
-          >
-            Browse all services
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            <label htmlFor="landing-service-sort" className="flex items-center gap-2 text-sm font-semibold text-[#454B54]">
+              Sort by
+              <select
+                id="landing-service-sort"
+                value={sortOrder}
+                onChange={(event) => setSortOrder(event.target.value)}
+                className="rounded-lg border border-[#D7DCE3] bg-white px-3 py-2 text-sm font-normal"
+              >
+                <option value="recommended">Recommended</option>
+                <option value="category">Category (A–Z)</option>
+                <option value="price-low">Price: low to high</option>
+                <option value="price-high">Price: high to low</option>
+              </select>
+            </label>
+            <Link
+              href="/services"
+              className="text-sm font-semibold text-[#2563EB] hover:underline"
+            >
+              Browse all services
+            </Link>
+          </div>
         </div>
 
         {isLoading ? (
@@ -116,7 +149,7 @@ export function LandingServices() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {services.map((service) => {
+            {displayedServices.map((service) => {
               const isAvailable = isRequestableService(service);
               const technician = getServiceTechnician(service);
               return (
