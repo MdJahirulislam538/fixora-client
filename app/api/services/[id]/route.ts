@@ -22,5 +22,24 @@ export async function GET(
   if (!service) {
     return NextResponse.json({ message: "Service not found." }, { status: 404 });
   }
-  return NextResponse.json({ service: serializeDocument(service) });
+
+  const legacyTechnician = (service.technician ?? {}) as Document;
+  const technicianEmail = service.technicianEmail ?? legacyTechnician.email;
+  const technicianProfile =
+    typeof technicianEmail === "string"
+      ? await db.collection<Document>("user").findOne(
+          { email: technicianEmail },
+          { projection: { name: 1, image: 1, area: 1, bio: 1 } },
+        )
+      : null;
+  const technician = {
+    id: legacyTechnician.id ?? technicianProfile?._id?.toString() ?? "",
+    name: service.technicianName ?? legacyTechnician.name ?? technicianProfile?.name ?? "Technician",
+    photo: legacyTechnician.photo ?? technicianProfile?.image ?? "",
+    area: legacyTechnician.area ?? technicianProfile?.area ?? "",
+    bio: legacyTechnician.bio ?? technicianProfile?.bio ?? "",
+  };
+  return NextResponse.json({
+    service: serializeDocument({ ...service, technician }),
+  });
 }

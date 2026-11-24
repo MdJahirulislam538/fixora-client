@@ -1,25 +1,35 @@
 export interface TechnicianSummary {
   id?: string;
   name: string;
+  email?: string;
   photo: string;
   area: string;
   bio: string;
 }
 
-export interface ServiceRecord {
+export interface ServicePriceFields {
+  basePrice?: number | string | null;
+  startingPrice?: number | string | null;
+}
+
+export interface ServiceTechnicianFields {
+  technicianName?: string;
+  technicianEmail?: string;
+  technician?: Partial<TechnicianSummary> | null;
+}
+
+export interface ServiceRecord extends ServicePriceFields, ServiceTechnicianFields {
   id?: string;
   _id?: string;
   title: string;
   category: string;
   image: string;
   description: string;
-  startingPrice: number | string;
   estimatedDuration: string;
   serviceMode: string;
   serviceArea: string;
   approvalStatus: string;
   isAvailable: boolean;
-  technician: TechnicianSummary;
 }
 
 export function getServiceId(service: ServiceRecord) {
@@ -28,6 +38,20 @@ export function getServiceId(service: ServiceRecord) {
 
 export function isRequestableService(service: ServiceRecord) {
   return service.approvalStatus === "approved" && service.isAvailable === true;
+}
+
+export function getServicePrice(service: ServicePriceFields) {
+  return service.basePrice ?? service.startingPrice ?? 0;
+}
+
+export function getServiceTechnician(service: ServiceTechnicianFields): TechnicianSummary {
+  return {
+    id: service.technician?.id,
+    name: service.technicianName || service.technician?.name || "Technician",
+    photo: service.technician?.photo || "",
+    area: service.technician?.area || "",
+    bio: service.technician?.bio || "",
+  };
 }
 
 export function formatServiceMode(mode: string) {
@@ -42,4 +66,8 @@ export function formatServiceMode(mode: string) {
 export function formatStartingPrice(price: number | string) {
   if (typeof price === "number") return `৳${price.toLocaleString()}`;
   return price.startsWith("৳") ? price : `৳${price}`;
+}
+
+export function formatServicePrice(service: ServicePriceFields) {
+  return formatStartingPrice(getServicePrice(service));
 }

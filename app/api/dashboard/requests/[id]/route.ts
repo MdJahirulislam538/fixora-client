@@ -45,9 +45,26 @@ export async function PATCH(
       return NextResponse.json({ message: "That booking status change is not allowed." }, { status: 409 });
     }
 
+    const update: Document = {
+      status: body.status,
+      updatedAt: new Date(),
+    };
+    if (body.status === "completed") {
+      const finalAmount = Number(body.finalAmount ?? booking.basePrice);
+      if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+        return NextResponse.json({ message: "Enter a positive final amount." }, { status: 400 });
+      }
+      update.finalAmount = finalAmount;
+    } else if (body.finalAmount !== undefined) {
+      return NextResponse.json(
+        { message: "A final amount can only be set when completing a job." },
+        { status: 400 },
+      );
+    }
+
     await bookings.updateOne(
       { _id: toObjectId(id), technicianEmail: access.user.email, status: booking.status },
-      { $set: { status: body.status, updatedAt: new Date() } },
+      { $set: update },
     );
     return NextResponse.json({ success: true });
   } catch (error) {

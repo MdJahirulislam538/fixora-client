@@ -7,9 +7,9 @@ import {
   ServiceCategories,
   ServiceCategoryItem,
 } from "../components/ServiceCategories";
+import { LandingServices } from "../components/LandingServices";
 import { HumanConnection } from "../components/HumanConnection";
 import { HowItWorks } from "../components/HowItWorks";
-import { BookingSection } from "../components/BookingSection";
 import { WhyChooseUs } from "../components/WhyChooseUs";
 import { Testimonials } from "../components/Testimonials";
 import { ServiceLocations } from "../components/ServiceLocations";
@@ -22,24 +22,13 @@ import { TrackServiceModal } from "../components/TrackServiceModal";
 export default function Home() {
   const [selectedServiceForModal, setSelectedServiceForModal] =
     useState<ServiceCategoryItem | null>(null);
-  const [bookingCategory, setBookingCategory] = useState<string>("ac-service");
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
-  // Smooth scroll to booking section
-  const scrollToBooking = (categoryId?: string) => {
-    if (categoryId) {
-      setBookingCategory(categoryId);
-    }
-    const el = document.getElementById("booking");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
+  const scrollToBooking = () => {
+    document.getElementById("landing-services")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const scrollToServices = () => {
-    const el = document.getElementById("services");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
+    document.getElementById("landing-services")?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -55,10 +44,13 @@ export default function Home() {
         {/* 7. Trust Indicators */}
         <TrustBar />
 
-        {/* 8. Service Categories Section */}
+        {/* Approved services available to book */}
+        <LandingServices />
+
+        {/* Service category overview */}
         <ServiceCategories
           onSelectService={(service) => setSelectedServiceForModal(service)}
-          onBookService={(serviceId) => scrollToBooking(serviceId)}
+          onBookService={scrollToBooking}
         />
 
         {/* 9. Human Connection Section ("SERVICE IS PERSONAL") */}
@@ -66,13 +58,6 @@ export default function Home() {
 
         {/* 10. How It Works */}
         <HowItWorks />
-
-        {/* 11. Booking Section */}
-        <BookingSection
-          key={bookingCategory}
-          preselectedCategory={bookingCategory}
-          onClearPreselectedCategory={() => setBookingCategory("ac-service")}
-        />
 
         {/* 12. Why Choose FIXORA */}
         <WhyChooseUs />
@@ -108,7 +93,7 @@ export default function Home() {
       <ServiceDetailModal
         service={selectedServiceForModal}
         onClose={() => setSelectedServiceForModal(null)}
-        onBookThis={(serviceId) => scrollToBooking(serviceId)}
+        onBookThis={scrollToBooking}
       />
 
       <TrackServiceModal

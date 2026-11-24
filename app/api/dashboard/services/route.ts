@@ -47,36 +47,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Complete all service fields." }, { status: 400 });
     }
     
-    const startingPrice = Number(body.startingPrice);
-    if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
+    const basePrice = Number(body.basePrice ?? body.startingPrice);
+    if (!Number.isFinite(basePrice) || basePrice <= 0) {
       return NextResponse.json({ message: "Enter a positive base price." }, { status: 400 });
     }
 
     const db = await getDashboardDb();
-    const technician = await db.collection<Document>("user").findOne({
-      email: access.user.email,
-    });
-
     const service: Document = {
       title: String(body.title).trim(),
       category: String(body.category).trim(),
       description: String(body.description).trim(),
-      startingPrice,
+      basePrice,
       estimatedDuration: String(body.estimatedDuration).trim(),
       serviceMode: String(body.serviceMode).trim(),
       serviceArea: String(body.serviceArea).trim(),
       image: String(body.image).trim(),
       approvalStatus: "pending",
       isAvailable: true,
+      technicianName: access.user.name,
       technicianEmail: access.user.email,
-      technician: {
-        id: access.user.id,
-        name: access.user.name,
-        email: access.user.email,
-        photo: technician?.image ?? "",
-        area: technician?.area ?? "",
-        bio: technician?.bio ?? "",
-      },
       createdAt: new Date(),
       updatedAt: new Date(),
     };

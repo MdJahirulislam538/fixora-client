@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   formatServiceMode,
-  formatStartingPrice,
+  formatServicePrice,
   getServiceId,
+  getServiceTechnician,
   isRequestableService,
   ServiceRecord,
 } from "../../components/ServiceData";
@@ -80,11 +81,13 @@ export default function ServicesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {services.map((service) => (
-                <article
-                  key={getServiceId(service)}
-                  className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm transition-shadow hover:shadow-md"
-                >
+              {services.map((service) => {
+                const technician = getServiceTechnician(service);
+                return (
+                  <article
+                    key={getServiceId(service)}
+                    className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm transition-shadow hover:shadow-md"
+                  >
                   <div className="h-48 bg-slate-100">
                     {service.image ? (
                       <img src={service.image} alt={service.title} className="h-full w-full object-cover" />
@@ -108,11 +111,11 @@ export default function ServicesPage() {
                       </div>
                       <div className="flex justify-between gap-3">
                         <dt className="text-[#737B87]">Starting price</dt>
-                        <dd className="text-right font-bold text-[#172B4D]">{formatStartingPrice(service.startingPrice)}</dd>
+                        <dd className="text-right font-bold text-[#172B4D]">{formatServicePrice(service)}</dd>
                       </div>
                       <div className="flex justify-between gap-3">
                         <dt className="text-[#737B87]">Technician</dt>
-                        <dd className="text-right font-medium text-[#172B4D]">{service.technician.name}</dd>
+                        <dd className="text-right font-medium text-[#172B4D]">{technician.name}</dd>
                       </div>
                     </dl>
                     <Link
@@ -122,8 +125,9 @@ export default function ServicesPage() {
                       View Details
                     </Link>
                   </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>

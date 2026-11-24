@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { authClient } from "../../../../app/lib/auth-client";
 import {
+  formatServicePrice,
+  ServicePriceFields,
+} from "../../../../components/ServiceData";
+import {
   DashboardEmpty,
   DashboardError,
   DashboardPageHeading,
@@ -15,7 +19,7 @@ import {
 import { dashboardRequest } from "../../../../components/dashboard/api";
 import { ServiceForm, ServiceFormValue } from "../../../../components/dashboard/ServiceForm";
 
-interface TechnicianService extends ServiceFormValue {
+interface TechnicianService extends Omit<ServiceFormValue, "basePrice">, ServicePriceFields {
   id: string;
   approvalStatus: string;
   isAvailable: boolean;
@@ -136,7 +140,7 @@ export default function TechnicianServicesPage() {
                     </div>
                   </td>
                   <td className={tableCellClass}>{service.category}</td>
-                  <td className={tableCellClass}>৳{Number(service.startingPrice).toLocaleString()}</td>
+                  <td className={tableCellClass}>{formatServicePrice(service)}</td>
                   <td className={tableCellClass}><StatusBadge value={service.approvalStatus} /></td>
                   <td className={tableCellClass}><AvailabilityToggle service={service} onToggle={() => void toggleAvailability(service)} /></td>
                   <td className={tableCellClass}><ServiceActions service={service} onEdit={() => setEditing(service)} onDelete={() => setDeleting(service)} onToggle={() => void toggleAvailability(service)} compact /></td>
@@ -177,7 +181,7 @@ function ServiceSummary({ service }: { service: TechnicianService }) {
       {service.image ? <img src={service.image} alt="" className="h-14 w-14 rounded-lg object-cover" /> : <div className="h-14 w-14 rounded-lg bg-slate-100" />}
       <div className="min-w-0 flex-1">
         <h3 className="truncate font-semibold text-[#172B4D]">{service.title}</h3>
-        <p className="mt-1 text-xs text-[#737B87]">{service.category} · ৳{Number(service.startingPrice).toLocaleString()}</p>
+        <p className="mt-1 text-xs text-[#737B87]">{service.category} · {formatServicePrice(service)}</p>
         <div className="mt-2 flex gap-2"><StatusBadge value={service.approvalStatus} /><StatusBadge value={service.isAvailable ? "available" : "unavailable"} /></div>
       </div>
     </div>

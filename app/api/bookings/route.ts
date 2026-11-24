@@ -16,9 +16,10 @@ export async function POST(request: Request) {
 
   try {
     const body = await readJsonObject(request);
+    const customerPhone = body.customerPhone ?? body.phone;
     if (
       !isNonEmptyString(body.serviceId) ||
-      !isNonEmptyString(body.phone) ||
+      !isNonEmptyString(customerPhone) ||
       !isNonEmptyString(body.address) ||
       !isNonEmptyString(body.preferredDate) ||
       !isNonEmptyString(body.problemDescription)
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const basePrice = Number(service.startingPrice ?? service.basePrice);
+    const basePrice = Number(service.basePrice ?? service.startingPrice);
     if (!Number.isFinite(basePrice) || basePrice <= 0) {
       return NextResponse.json({ message: "The service has an invalid price." }, { status: 400 });
     }
@@ -84,25 +85,17 @@ export async function POST(request: Request) {
       serviceId: service._id?.toString(),
       serviceTitle: service.title,
       serviceImage: service.image ?? "",
-      serviceCategory: service.category ?? "",
-      serviceDescription: service.description ?? "",
-      estimatedDuration: service.estimatedDuration ?? "",
-      serviceMode: service.serviceMode ?? "",
-      serviceArea: service.serviceArea ?? "",
-      technicianId: technician.id ?? service.technicianId ?? "",
-      technicianName: technician.name ?? service.technicianName ?? "",
+      category: service.category ?? "",
+      basePrice,
+      technicianName: service.technicianName ?? technician.name ?? "",
       technicianEmail: service.technicianEmail ?? technician.email ?? "",
-      technicianPhoto: technician.photo ?? "",
-      technicianArea: technician.area ?? "",
-      technicianBio: technician.bio ?? "",
       customerId: access.user.id,
       customerName: access.user.name,
       customerEmail: access.user.email,
-      phone: body.phone.trim(),
+      customerPhone: customerPhone.trim(),
       address: body.address.trim(),
       preferredDate,
       problemDescription,
-      basePrice,
       finalAmount: basePrice,
       status: "requested",
       paymentStatus: "unpaid",

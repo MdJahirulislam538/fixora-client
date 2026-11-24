@@ -62,13 +62,15 @@ export async function PATCH(
     if (fields.some((field) => !isNonEmptyString(body[field]))) {
       return NextResponse.json({ message: "Complete all service fields." }, { status: 400 });
     }
-    const startingPrice = Number(body.startingPrice);
-    if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
+    const basePrice = Number(body.basePrice ?? body.startingPrice);
+    if (!Number.isFinite(basePrice) || basePrice <= 0) {
       return NextResponse.json({ message: "Enter a positive base price." }, { status: 400 });
     }
     const update: Document = {
       ...Object.fromEntries(fields.map((field) => [field, String(body[field]).trim()])),
-      startingPrice,
+      basePrice,
+      technicianName: access.user.name,
+      technicianEmail: access.user.email,
       approvalStatus: "pending",
       updatedAt: new Date(),
     };

@@ -8,7 +8,7 @@ export interface ServiceFormValue {
   title: string;
   category: string;
   description: string;
-  startingPrice: number;
+  basePrice: number;
   estimatedDuration: string;
   serviceMode: string;
   serviceArea: string;
@@ -16,15 +16,30 @@ export interface ServiceFormValue {
 }
 
 const categories = [
-  ["smartphone-tablet", "Smartphone & Tablet"],
-  ["laptop-computer", "Laptop & Computer"],
-  ["ac-service", "Air Conditioning"],
-  ["refrigerator-repair", "Refrigerator"],
-  ["washing-machine", "Washing Machine"],
-  ["television-repair", "Television"],
-  ["home-appliance", "Home Appliance"],
-  ["smart-home-installation", "Smart Home Installation"],
+  ["Smartphone", "Smartphone"],
+  ["Laptop & PC", "Laptop & PC"],
+  ["AC", "AC"],
+  ["Refrigerator", "Refrigerator"],
+  ["TV", "TV"],
+  ["Washing Machine", "Washing Machine"],
+  ["Electrical", "Electrical"],
 ];
+
+const legacyCategories: Record<string, string> = {
+  "smartphone-tablet": "Smartphone",
+  "laptop-computer": "Laptop & PC",
+  "ac-service": "AC",
+  "refrigerator-repair": "Refrigerator",
+  "television-repair": "TV",
+  "washing-machine": "Washing Machine",
+  "home-appliance": "Electrical",
+  "smart-home-installation": "Electrical",
+};
+
+interface ServiceFormInitialValue extends Partial<Omit<ServiceFormValue, "basePrice">> {
+  basePrice?: number | string | null;
+  startingPrice?: number | string | null;
+}
 
 export function ServiceForm({
   initialValue,
@@ -33,7 +48,7 @@ export function ServiceForm({
   submitLabel,
   onSave,
 }: {
-  initialValue?: Partial<ServiceFormValue>;
+  initialValue?: ServiceFormInitialValue;
   technicianName: string;
   technicianEmail: string;
   submitLabel: string;
@@ -41,9 +56,9 @@ export function ServiceForm({
 }) {
   const [values, setValues] = useState<ServiceFormValue>({
     title: initialValue?.title ?? "",
-    category: initialValue?.category ?? "",
+    category: legacyCategories[initialValue?.category ?? ""] ?? initialValue?.category ?? "",
     description: initialValue?.description ?? "",
-    startingPrice: Number(initialValue?.startingPrice ?? 0),
+    basePrice: Number(initialValue?.basePrice ?? initialValue?.startingPrice ?? 0),
     estimatedDuration: initialValue?.estimatedDuration ?? "",
     serviceMode: initialValue?.serviceMode ?? "Home Visit",
     serviceArea: initialValue?.serviceArea ?? "",
@@ -67,8 +82,8 @@ export function ServiceForm({
       values.description.trim().length < 20 ||
       !values.estimatedDuration.trim() ||
       !values.serviceArea.trim() ||
-      !Number.isFinite(values.startingPrice) ||
-      values.startingPrice <= 0 ||
+      !Number.isFinite(values.basePrice) ||
+      values.basePrice <= 0 ||
       (!values.image && !file)
     ) {
       setError("Complete each field, use at least 20 characters for the description, and enter a positive price.");
@@ -119,7 +134,7 @@ export function ServiceForm({
         </label>
         <label className="text-sm font-semibold text-[#172B4D]">
           Base price (৳)
-          <input type="number" min="1" step="1" value={values.startingPrice || ""} onChange={(event) => update("startingPrice", Number(event.target.value))} required className={inputClass} />
+          <input type="number" min="1" step="1" value={values.basePrice || ""} onChange={(event) => update("basePrice", Number(event.target.value))} required className={inputClass} />
         </label>
         <label className="text-sm font-semibold text-[#172B4D]">
           Estimated duration

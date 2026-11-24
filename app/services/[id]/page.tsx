@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   formatServiceMode,
-  formatStartingPrice,
+  formatServicePrice,
+  getServiceTechnician,
   isRequestableService,
   ServiceRecord,
 } from "../../../components/ServiceData";
@@ -48,6 +49,8 @@ export default function ServiceDetailsPage() {
     return () => controller.abort();
   }, [id]);
 
+  const technician = service ? getServiceTechnician(service) : null;
+
   return (
       <main className="min-h-screen bg-[#F5F7FA]">
       {state === "loading" ? (
@@ -86,7 +89,7 @@ export default function ServiceDetailsPage() {
               <dl className="mt-6 grid gap-4 rounded-xl bg-[#F5F7FA] p-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <dt className="text-xs text-[#737B87]">Starting price</dt>
-                  <dd className="mt-1 font-bold text-[#172B4D]">{formatStartingPrice(service.startingPrice)}</dd>
+                  <dd className="mt-1 font-bold text-[#172B4D]">{formatServicePrice(service)}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-[#737B87]">Estimated duration</dt>
@@ -104,15 +107,15 @@ export default function ServiceDetailsPage() {
 
               <section className="mt-8 rounded-xl border border-[#E5E7EB] p-4 sm:p-5">
                 <div className="flex items-start gap-4">
-                  {service.technician.photo ? (
-                    <img src={service.technician.photo} alt={service.technician.name} className="h-16 w-16 rounded-full object-cover" />
+                  {technician?.photo ? (
+                    <img src={technician.photo} alt={technician.name} className="h-16 w-16 rounded-full object-cover" />
                   ) : (
                     <div aria-hidden="true" className="h-16 w-16 rounded-full bg-slate-200" />
                   )}
                   <div>
-                    <h2 className="font-bold text-[#172B4D]">{service.technician.name}</h2>
-                    <p className="mt-1 text-sm text-[#737B87]">{service.technician.area}</p>
-                    <p className="mt-2 text-sm leading-5 text-[#454B54]">{service.technician.bio}</p>
+                    <h2 className="font-bold text-[#172B4D]">{technician?.name}</h2>
+                    {technician?.area && <p className="mt-1 text-sm text-[#737B87]">{technician.area}</p>}
+                    {technician?.bio && <p className="mt-2 text-sm leading-5 text-[#454B54]">{technician.bio}</p>}
                   </div>
                 </div>
               </section>

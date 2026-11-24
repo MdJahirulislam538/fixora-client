@@ -12,17 +12,20 @@ import {
   tableHeaderClass,
 } from "../../../../components/dashboard/DashboardComponents";
 import { dashboardRequest } from "../../../../components/dashboard/api";
+import {
+  formatServicePrice,
+  getServiceTechnician,
+  ServicePriceFields,
+  ServiceTechnicianFields,
+} from "../../../../components/ServiceData";
 
-interface Service {
+interface Service extends ServicePriceFields, ServiceTechnicianFields {
   id: string;
   title: string;
   category: string;
   image: string;
-  startingPrice: number;
   approvalStatus: string;
   isAvailable: boolean;
-  technician?: { name?: string; email?: string };
-  technicianEmail?: string;
 }
 
 const filters = ["pending", "approved", "rejected", "all"];
@@ -96,30 +99,36 @@ export default function AdminServicesPage() {
       ) : (
         <>
           <div className="space-y-3 md:hidden">
-            {services.map((service) => (
-              <article key={service.id} className="rounded-xl border border-[#E5E7EB] bg-white p-4">
-                <div className="flex gap-3">
-                  {service.image ? <img src={service.image} alt="" className="h-14 w-14 rounded-lg object-cover" /> : <div className="h-14 w-14 rounded-lg bg-slate-100" />}
-                  <div className="min-w-0"><h3 className="font-semibold text-[#172B4D]">{service.title}</h3><p className="text-xs text-[#737B87]">{service.category} · {service.technician?.name || service.technicianEmail}</p></div>
-                </div>
-                <div className="mt-3 flex items-center justify-between"><StatusBadge value={service.approvalStatus} /><span className="font-semibold">৳{Number(service.startingPrice).toLocaleString()}</span></div>
-                <ReviewActions service={service} working={workingId === service.id} onReview={(status) => void review(service, status)} />
-              </article>
-            ))}
+            {services.map((service) => {
+              const technician = getServiceTechnician(service);
+              return (
+                <article key={service.id} className="rounded-xl border border-[#E5E7EB] bg-white p-4">
+                  <div className="flex gap-3">
+                    {service.image ? <img src={service.image} alt="" className="h-14 w-14 rounded-lg object-cover" /> : <div className="h-14 w-14 rounded-lg bg-slate-100" />}
+                    <div className="min-w-0"><h3 className="font-semibold text-[#172B4D]">{service.title}</h3><p className="text-xs text-[#737B87]">{service.category} · {technician.name}</p></div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between"><StatusBadge value={service.approvalStatus} /><span className="font-semibold">{formatServicePrice(service)}</span></div>
+                  <ReviewActions service={service} working={workingId === service.id} onReview={(status) => void review(service, status)} />
+                </article>
+              );
+            })}
           </div>
           <DashboardTable>
             <thead><tr><th className={tableHeaderClass}>Service</th><th className={tableHeaderClass}>Technician</th><th className={tableHeaderClass}>Price</th><th className={tableHeaderClass}>Status</th><th className={tableHeaderClass}>Availability</th><th className={tableHeaderClass}>Review</th></tr></thead>
             <tbody className="divide-y divide-[#E5E7EB]">
-              {services.map((service) => (
-                <tr key={service.id}>
-                  <td className={tableCellClass}><div className="flex min-w-48 items-center gap-3">{service.image ? <img src={service.image} alt="" className="h-11 w-11 rounded-lg object-cover" /> : <div className="h-11 w-11 rounded-lg bg-slate-100" />}<div><p className="font-semibold text-[#172B4D]">{service.title}</p><p className="text-xs text-[#737B87]">{service.category}</p></div></div></td>
-                  <td className={tableCellClass}>{service.technician?.name || "Technician"}<span className="mt-1 block text-xs text-[#737B87]">{service.technicianEmail || service.technician?.email}</span></td>
-                  <td className={tableCellClass}>৳{Number(service.startingPrice).toLocaleString()}</td>
-                  <td className={tableCellClass}><StatusBadge value={service.approvalStatus} /></td>
-                  <td className={tableCellClass}>{service.isAvailable ? "Available" : "Unavailable"}</td>
-                  <td className={tableCellClass}><ReviewActions service={service} working={workingId === service.id} onReview={(status) => void review(service, status)} /></td>
-                </tr>
-              ))}
+              {services.map((service) => {
+                const technician = getServiceTechnician(service);
+                return (
+                  <tr key={service.id}>
+                    <td className={tableCellClass}><div className="flex min-w-48 items-center gap-3">{service.image ? <img src={service.image} alt="" className="h-11 w-11 rounded-lg object-cover" /> : <div className="h-11 w-11 rounded-lg bg-slate-100" />}<div><p className="font-semibold text-[#172B4D]">{service.title}</p><p className="text-xs text-[#737B87]">{service.category}</p></div></div></td>
+                    <td className={tableCellClass}>{technician.name}<span className="mt-1 block text-xs text-[#737B87]">{service.technicianEmail || service.technician?.email}</span></td>
+                    <td className={tableCellClass}>{formatServicePrice(service)}</td>
+                    <td className={tableCellClass}><StatusBadge value={service.approvalStatus} /></td>
+                    <td className={tableCellClass}>{service.isAvailable ? "Available" : "Unavailable"}</td>
+                    <td className={tableCellClass}><ReviewActions service={service} working={workingId === service.id} onReview={(status) => void review(service, status)} /></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </DashboardTable>
         </>

@@ -61,7 +61,7 @@ export function RepairRequestForm({ service }: RepairRequestFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           serviceId: getServiceId(service),
-          phone: phone.trim(),
+          customerPhone: phone.trim(),
           address: address.trim(),
           preferredDate,
           problemDescription: problemDescription.trim(),

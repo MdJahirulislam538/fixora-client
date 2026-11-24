@@ -16,11 +16,14 @@ import { dashboardRequest } from "../../../../components/dashboard/api";
 interface TechnicianBooking {
   id: string;
   customerName: string;
-  phone: string;
+  customerPhone?: string;
+  phone?: string;
   address: string;
   preferredDate: string;
   problemDescription: string;
   serviceTitle: string;
+  basePrice: number;
+  finalAmount?: number;
   status: string;
 }
 
@@ -64,13 +67,17 @@ export default function TechnicianRequestsPage() {
     };
   }, []);
 
-  const updateStatus = async (booking: TechnicianBooking, status: string) => {
+  const updateStatus = async (
+    booking: TechnicianBooking,
+    status: string,
+    finalAmount?: number,
+  ) => {
     setError("");
     setWorkingId(booking.id);
     try {
       await dashboardRequest(`/api/dashboard/requests/${encodeURIComponent(booking.id)}`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, ...(finalAmount !== undefined ? { finalAmount } : {}) }),
       });
       await loadBookings();
     } catch (updateError) {
@@ -122,7 +129,7 @@ export default function TechnicianRequestsPage() {
                 </div>
                 <p className="mt-2 text-sm text-[#454B54]">{booking.serviceTitle}</p>
                 <dl className="mt-3 space-y-2 text-xs text-[#737B87]">
-                  <div><dt className="inline font-semibold">Phone: </dt><dd className="inline">{booking.phone}</dd></div>
+                  <div><dt className="inline font-semibold">Phone: </dt><dd className="inline">{booking.customerPhone || booking.phone}</dd></div>
                   <div><dt className="inline font-semibold">Address: </dt><dd className="inline">{booking.address}</dd></div>
                   <div><dt className="inline font-semibold">Preferred date: </dt><dd className="inline">{new Date(booking.preferredDate).toLocaleDateString()}</dd></div>
                 </dl>
@@ -147,7 +154,7 @@ export default function TechnicianRequestsPage() {
                 <tr key={booking.id}>
                   <td className={tableCellClass}>
                     <p className="font-semibold text-[#172B4D]">{booking.customerName}</p>
-                    <p className="mt-1 text-xs text-[#737B87]">{booking.phone}</p>
+                    <p className="mt-1 text-xs text-[#737B87]">{booking.customerPhone || booking.phone}</p>
                   </td>
                   <td className={`${tableCellClass} max-w-72`}>
                     <p className="font-semibold text-[#172B4D]">{booking.serviceTitle}</p>
@@ -174,17 +181,55 @@ function RequestActions({
 }: {
   booking: TechnicianBooking;
   working: boolean;
-  onUpdate: (status: string) => void;
+  onUpdate: (status: string, finalAmount?: number) => void;
 }) {
+  const [finalAmount, setFinalAmount] = useState(
+    String(booking.finalAmount ?? booking.basePrice ?? ""),
+  );
+  const [amountError, setAmountError] = useState("");
   const actions = actionMap[booking.status] ?? [];
+
+  const handleUpdate = (status: string) => {
+    if (status !== "completed") {
+      onUpdate(status);
+      return;
+    }
+
+    const amount = Number(finalAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setAmountError("Enter a positive final amount.");
+      return;
+    }
+
+    setAmountError("");
+    onUpdate(status, amount);
+  };
+
   return (
     <div className="mt-3 flex flex-wrap gap-2">
+      {actions.some((action) => action.status === "completed") && (
+        <label className="w-full text-xs font-semibold text-[#454B54]">
+          Final amount (৳)
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={finalAmount}
+            onChange={(event) => {
+              setFinalAmount(event.target.value);
+              setAmountError("");
+            }}
+            className="mt-1 block w-full max-w-48 rounded-lg border border-[#D7DCE3] bg-white px-3 py-2 text-sm text-[#172B4D]"
+          />
+        </label>
+      )}
+      {amountError && <p role="alert" className="w-full text-xs text-red-700">{amountError}</p>}
       {actions.map((action) => (
         <button
           type="button"
           key={action.status}
           disabled={working}
-          onClick={() => onUpdate(action.status)}
+          onClick={() => handleUpdate(action.status)}
           className={`${action.status === "rejected" ? "rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50" : secondaryButtonClass} px-3 py-2 text-xs`}
         >
           {working ? "Saving..." : action.label}
