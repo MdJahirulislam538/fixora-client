@@ -45,14 +45,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   const user = session?.user;
-  const role: Role =
-    user?.role === "technician" || user?.role === "admin"
-      ? user.role
-      : "customer";
+  const role: Role = user?.role === "technician" || user?.role === "admin" ? user.role : "customer";
   const menu = useMemo(() => roleMenus[role], [role]);
-  const pageTitle =
-    menu.find((item) => item.href === pathname)?.label ??
-    (pathname === "/dashboard/profile" ? "Update Profile" : "Dashboard");
+  const pageTitle = menu.find((item) => item.href === pathname)?.label ?? (pathname === "/dashboard/profile" ? "Update Profile" : "Dashboard");
   const initials = user?.name
     .split(/\s+/)
     .filter(Boolean)
@@ -79,10 +74,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   useEffect(() => {
     if (isPending) return;
+
     if (!user) {
       router.replace(`/sign-in?redirectTo=${encodeURIComponent(pathname)}`);
       return;
     }
+    
     const routeRole = pathname.split("/")[2];
     if (
       (routeRole === "customer" || routeRole === "technician" || routeRole === "admin") &&

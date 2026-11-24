@@ -23,10 +23,7 @@ export async function GET(request: Request) {
   if (!access.user) return access.response;
 
   const db = await getDashboardDb();
-  const filter: Document =
-    access.user.role === "admin"
-      ? {}
-      : { technicianEmail: access.user.email };
+  const filter: Document = access.user.role === "admin" ? {} : { technicianEmail: access.user.email };
   const { searchParams } = new URL(request.url);
   const approvalStatus = searchParams.get("approvalStatus");
   if (approvalStatus && ["pending", "approved", "rejected"].includes(approvalStatus)) {
@@ -49,6 +46,7 @@ export async function POST(request: Request) {
     if (serviceFields.some((field) => !isNonEmptyString(body[field]))) {
       return NextResponse.json({ message: "Complete all service fields." }, { status: 400 });
     }
+    
     const startingPrice = Number(body.startingPrice);
     if (!Number.isFinite(startingPrice) || startingPrice <= 0) {
       return NextResponse.json({ message: "Enter a positive base price." }, { status: 400 });
@@ -58,6 +56,7 @@ export async function POST(request: Request) {
     const technician = await db.collection<Document>("user").findOne({
       email: access.user.email,
     });
+
     const service: Document = {
       title: String(body.title).trim(),
       category: String(body.category).trim(),

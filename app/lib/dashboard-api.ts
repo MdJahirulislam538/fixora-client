@@ -18,8 +18,7 @@ export async function getDashboardUser(request: Request) {
   const user = session?.user;
   if (!user) return null;
 
-  const role =
-    user.role === "technician" || user.role === "admin" ? user.role : "customer";
+  const role = user.role === "technician" || user.role === "admin" ? user.role : "customer";
   return {
     id: user.id,
     name: user.name,
@@ -29,10 +28,7 @@ export async function getDashboardUser(request: Request) {
   } satisfies DashboardUser;
 }
 
-export async function requireDashboardUser(
-  request: Request,
-  roles?: DashboardRole[],
-) {
+export async function requireDashboardUser(request: Request, roles?: DashboardRole[],) {
   const user = await getDashboardUser(request);
   if (!user) {
     return {
