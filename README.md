@@ -65,6 +65,12 @@ Stripe and ImgBB credentials are needed only to use their respective integration
 
 5. Open [http://localhost:3000](http://localhost:3000).
 
+## Vercel deployment
+
+In the **fixora-client** Vercel project, set `NEXT_PUBLIC_API_URL` to the deployed Express server URL and set `FIXORA_SERVER_API_KEY` to the same secret configured in the **fixora-server** project. Also configure `MONGODB_URI`, `MONGODB_DATABASE=fixoraClientDb`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL` for the client project. Configure the server's MongoDB and Stripe variables in the server project as described in [fixora-server/README.md](../fixora-server/README.md).
+
+Add the variables to the Production environment (and Preview if used), then redeploy both projects. Do not expose the shared API key with a `NEXT_PUBLIC_` prefix.
+
 ## Useful commands
 
 ```bash
