@@ -1,20 +1,8 @@
-import { NextResponse } from "next/server";
-import { Document } from "mongodb";
-import {
-  getDashboardDb,
-  requireDashboardUser,
-  serializeDocument,
-} from "../../../lib/dashboard-api";
+import { requireDashboardUser } from "../../../lib/dashboard-api";
+import { forwardToFixoraServer } from "../../../lib/fixora-server";
 
 export async function GET(request: Request) {
   const access = await requireDashboardUser(request, ["technician"]);
   if (!access.user) return access.response;
-
-  const db = await getDashboardDb();
-  const bookings = await db
-    .collection<Document>("bookings")
-    .find({ technicianEmail: access.user.email })
-    .sort({ createdAt: -1 })
-    .toArray();
-  return NextResponse.json({ bookings: bookings.map(serializeDocument) });
+  return forwardToFixoraServer(request, "/api/dashboard/requests", access.user);
 }

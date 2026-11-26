@@ -42,25 +42,28 @@ Stripe and ImgBB credentials are needed only to use their respective integration
    MONGODB_URI="your-mongodb-connection-string"
    BETTER_AUTH_SECRET="a-long-random-secret"
    BETTER_AUTH_URL="http://localhost:3000"
+   NEXT_PUBLIC_API_URL="http://localhost:5000"
+   FIXORA_SERVER_API_KEY="the-same-secret-configured-in-fixora-server"
    ```
 
    Optional settings:
 
    ```env
    MONGODB_DATABASE="fixoraClientDb"
-   STRIPE_SECRET_KEY="your-stripe-secret-key"
    IMGBB_API_KEY="your-imgbb-api-key"
    ```
 
-   Set `BETTER_AUTH_URL` to the app's public URL in each deployment environment. Keep secrets out of source control.
+   `FIXORA_SERVER_API_KEY` must match the value in `fixora-server/.env`. `NEXT_PUBLIC_API_URL` points to the Express API; use the deployed server URL in Vercel. Set `BETTER_AUTH_URL` to the app's public URL in each deployment environment. Configure `STRIPE_SECRET_KEY` in the Express server environment for checkout. Keep secrets out of source control.
 
-3. Start the development server:
+3. Configure and start the Express server as described in [fixora-server/README.md](../fixora-server/README.md).
+
+4. Start the client development server:
 
    ```bash
    npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000).
+5. Open [http://localhost:3000](http://localhost:3000).
 
 ## Useful commands
 
@@ -84,6 +87,6 @@ The script does not overwrite existing demo accounts or delete existing records.
 ## Project structure
 
 - `app/` — Next.js routes, pages, and API endpoints
-- `app/lib/` — Authentication, database, and API helpers
+- `app/lib/` — Authentication, database, and Express gateway helpers
 - `components/` — Shared site, service, and dashboard UI
 - `scripts/` — Maintenance and demo-data scripts
