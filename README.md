@@ -52,7 +52,7 @@ Stripe and ImgBB credentials are needed only to use their respective integration
    IMGBB_API_KEY="your-imgbb-api-key"
    ```
 
-   `NEXT_PUBLIC_API_URL` points to the Express API and defaults to `http://localhost:8000`; use the deployed server URL in Vercel. Public services load directly from the server's `/services` endpoint. Set `BETTER_AUTH_URL` to the app's public URL in each deployment environment. Configure `STRIPE_SECRET_KEY` in the Express server environment for checkout. Keep secrets out of source control.
+   `NEXT_PUBLIC_API_URL` points to the Express API and defaults to `http://localhost:8000`; use the deployed server URL in Vercel. Service requests use the client's same-origin `/api` routes, which forward to Express and avoid browser cross-origin connection issues. Set `BETTER_AUTH_URL` to the app's public URL in each deployment environment. Configure `STRIPE_SECRET_KEY` in the Express server environment for checkout. Keep secrets out of source control.
 
 3. Configure and start the Express server as described in [fixora-server/README.md](../fixora-server/README.md).
 

@@ -1,7 +1,3 @@
-const apiBaseUrl = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-).replace(/\/+$/, "");
-
 export class ServiceApiError extends Error {
   constructor(
     message: string,
@@ -16,15 +12,15 @@ export async function fetchServiceApi<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const endpoint = `${apiBaseUrl}/${path.replace(/^\/+/, "")}`;
+  const endpoint = `/api/${path.replace(/^\/+/, "")}`;
   let response: Response;
 
   try {
-    response = await fetch(endpoint, init);
+    response = await fetch(endpoint, { cache: "no-store", ...init });
   } catch (error) {
     if (init?.signal?.aborted) throw error;
     throw new Error(
-      `Cannot connect to the FIXORA server at ${apiBaseUrl}. Make sure the backend is running.`,
+      "Unable to contact the FIXORA services API. Please try again.",
     );
   }
 
