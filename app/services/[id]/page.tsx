@@ -13,6 +13,10 @@ import {
 import { RepairRequestForm } from "../../../components/RepairRequestForm";
 import { LoadingSkeleton } from "../../../components/LoadingSkeleton";
 import { toast } from "sonner";
+import {
+  fetchServiceApi,
+  ServiceApiError,
+} from "../../../components/service-api";
 type LoadState = "loading" | "loaded" | "not-found" | "error";
 
 export default function ServiceDetailsPage() {
@@ -24,18 +28,13 @@ export default function ServiceDetailsPage() {
     const controller = new AbortController();
     const loadService = async () => {
       try {
-        const response = await fetch(`/api/services/${encodeURIComponent(id)}`, {
+        const result = await fetchServiceApi<{ service?: ServiceRecord }>(
+          `/services/${encodeURIComponent(id)}`,
+          {
           signal: controller.signal,
-        });
-        if (response.status === 404) {
-          setState("not-found");
-          return;
-        }
-        if (!response.ok) {
-          throw new Error("Unable to load this service.");
-        }
-        const result = await response.json();
-        const record: ServiceRecord | null = result.service ?? result;
+          },
+        );
+        const record = result.service ?? null;
         if (!record || !isRequestableService(record)) {
           setState("not-found");
           return;
@@ -44,8 +43,12 @@ export default function ServiceDetailsPage() {
         setState("loaded");
       } catch (loadError) {
         if (!controller.signal.aborted) {
-          setState("error");
-          toast.error(loadError instanceof Error ? loadError.message : "Unable to load this service.");
+          if (loadError instanceof ServiceApiError && loadError.status === 404) {
+            setState("not-found");
+          } else {
+            setState("error");
+            toast.error(loadError instanceof Error ? loadError.message : "Unable to load this service.");
+          }
         }
       }
     };

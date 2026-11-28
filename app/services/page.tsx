@@ -12,6 +12,7 @@ import {
   isRequestableService,
   ServiceRecord,
 } from "../../components/ServiceData";
+import { fetchServiceApi } from "../../components/service-api";
 
 export default function ServicesPage() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
@@ -26,21 +27,14 @@ export default function ServicesPage() {
     const controller = new AbortController();
     const loadServices = async () => {
       try {
-        const response = await fetch(
-          "/api/services?approvalStatus=approved&isAvailable=true",
+        const result = await fetchServiceApi<{ services: ServiceRecord[] }>(
+          "/services",
           { signal: controller.signal },
         );
-        if (!response.ok) {
-          throw new Error("Services are unavailable right now. Please try again later.");
-        }
-        const result = await response.json();
-        const records: ServiceRecord[] = Array.isArray(result)
-          ? result
-          : result.services;
-        if (!Array.isArray(records)) {
+        if (!Array.isArray(result.services)) {
           throw new Error("The services response was not in the expected format.");
         }
-        setServices(records.filter(isRequestableService));
+        setServices(result.services.filter(isRequestableService));
       } catch (loadError) {
         if (!controller.signal.aborted) {
           const message = loadError instanceof Error

@@ -13,6 +13,7 @@ import {
 } from "./ServiceData";
 import { RepairRequestForm } from "./RepairRequestForm";
 import { toast } from "sonner";
+import { fetchServiceApi } from "./service-api";
 
 export function LandingServices() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
@@ -25,20 +26,16 @@ export function LandingServices() {
     const controller = new AbortController();
     const loadServices = async () => {
       try {
-        const response = await fetch("/api/services?includeUnavailable=true", {
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          throw new Error("Services are unavailable right now. Please try again later.");
-        }
-        const result = await response.json();
-        const records: ServiceRecord[] = Array.isArray(result)
-          ? result
-          : result.services;
-        if (!Array.isArray(records)) {
+        const result = await fetchServiceApi<{ services: ServiceRecord[] }>(
+          "/services?includeUnavailable=true",
+          { signal: controller.signal },
+        );
+        if (!Array.isArray(result.services)) {
           throw new Error("The services response was not in the expected format.");
         }
-        setServices(records.filter((service) => service.approvalStatus === "approved"));
+        setServices(
+          result.services.filter((service) => service.approvalStatus === "approved"),
+        );
       } catch (loadError) {
         if (!controller.signal.aborted) {
           const message = loadError instanceof Error

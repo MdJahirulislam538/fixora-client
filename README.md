@@ -42,8 +42,7 @@ Stripe and ImgBB credentials are needed only to use their respective integration
    MONGODB_URI="your-mongodb-connection-string"
    BETTER_AUTH_SECRET="a-long-random-secret"
    BETTER_AUTH_URL="http://localhost:3000"
-   NEXT_PUBLIC_API_URL="http://localhost:5000"
-   FIXORA_SERVER_API_KEY="the-same-secret-configured-in-fixora-server"
+   NEXT_PUBLIC_API_URL="http://localhost:8000"
    ```
 
    Optional settings:
@@ -53,7 +52,7 @@ Stripe and ImgBB credentials are needed only to use their respective integration
    IMGBB_API_KEY="your-imgbb-api-key"
    ```
 
-   `FIXORA_SERVER_API_KEY` must match the value in `fixora-server/.env`. `NEXT_PUBLIC_API_URL` points to the Express API; use the deployed server URL in Vercel. Set `BETTER_AUTH_URL` to the app's public URL in each deployment environment. Configure `STRIPE_SECRET_KEY` in the Express server environment for checkout. Keep secrets out of source control.
+   `NEXT_PUBLIC_API_URL` points to the Express API and defaults to `http://localhost:8000`; use the deployed server URL in Vercel. Public services load directly from the server's `/services` endpoint. Set `BETTER_AUTH_URL` to the app's public URL in each deployment environment. Configure `STRIPE_SECRET_KEY` in the Express server environment for checkout. Keep secrets out of source control.
 
 3. Configure and start the Express server as described in [fixora-server/README.md](../fixora-server/README.md).
 
@@ -67,9 +66,9 @@ Stripe and ImgBB credentials are needed only to use their respective integration
 
 ## Vercel deployment
 
-In the **fixora-client** Vercel project, set `NEXT_PUBLIC_API_URL` to the deployed Express server URL and set `FIXORA_SERVER_API_KEY` to the same secret configured in the **fixora-server** project. Also configure `MONGODB_URI`, `MONGODB_DATABASE=fixoraClientDb`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL` for the client project. Configure the server's MongoDB and Stripe variables in the server project as described in [fixora-server/README.md](../fixora-server/README.md).
+In both the **fixora-client** and **fixora-server** Vercel projects, set `BETTER_AUTH_SECRET` to the same value. In the client project, also set `NEXT_PUBLIC_API_URL` to the deployed Express server URL, plus `MONGODB_URI`, `MONGODB_DATABASE=fixoraClientDb`, and `BETTER_AUTH_URL`. Configure the server's MongoDB and Stripe variables as described in [fixora-server/README.md](../fixora-server/README.md).
 
-Add the variables to the Production environment (and Preview if used), then redeploy both projects. Do not expose the shared API key with a `NEXT_PUBLIC_` prefix.
+Add these variables to the Production environment (and Preview if used) in both projects, then redeploy both projects. Never share or commit the secret value.
 
 ## Useful commands
 

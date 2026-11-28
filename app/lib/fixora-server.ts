@@ -1,4 +1,5 @@
 import "server-only";
+import { createHmac } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { DashboardUser } from "./dashboard-api";
 
@@ -7,14 +8,8 @@ export async function forwardToFixoraServer(
   path: string,
   user?: DashboardUser,
 ) {
-  const serverUrl = process.env.NEXT_PUBLIC_API_URL;
-  const apiKey = process.env.FIXORA_SERVER_API_KEY;
-  if (!serverUrl || !apiKey) {
-    return NextResponse.json(
-      { message: "The Fixora server connection is not configured." },
-      { status: 503 },
-    );
-  }
+  const serverUrl =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   const requestUrl = new URL(request.url);
   let targetUrl: URL;
@@ -31,14 +26,30 @@ export async function forwardToFixoraServer(
   }
 
   const headers = new Headers({
-    "x-fixora-api-key": apiKey,
-    "x-fixora-client-url":
-      process.env.BETTER_AUTH_URL ?? requestUrl.origin,
+    "x-fixora-client-url": process.env.BETTER_AUTH_URL ?? requestUrl.origin,
   });
   if (user) {
+    const secret = process.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+      return NextResponse.json(
+        {
+          message:
+            "BETTER_AUTH_SECRET is missing from the FIXORA Client deployment.",
+        },
+        { status: 503 },
+      );
+    }
+    const encodedUser = Buffer.from(JSON.stringify(user), "utf8").toString(
+      "base64url",
+    );
+    const timestamp = Date.now().toString();
+    headers.set("x-fixora-user", encodedUser);
+    headers.set("x-fixora-timestamp", timestamp);
     headers.set(
-      "x-fixora-user",
-      Buffer.from(JSON.stringify(user), "utf8").toString("base64url"),
+      "x-fixora-signature",
+      createHmac("sha256", secret)
+        .update(`${timestamp}.${encodedUser}`)
+        .digest("hex"),
     );
   }
   const contentType = request.headers.get("content-type");
